@@ -2,7 +2,8 @@
 #define _SYSCALLS_H_
 
 void syscalls_jobs();
-void syscalls_kill(int pid);
+int syscalls_kill(int pid);
+void syscalls_kill_verbose(int pid);
 void syscalls_yield();
 
 #endif

@@ -234,6 +234,10 @@ void fillLabels(FILE *fin, char *buffer, char *word, essence *labels){
 char executeNextCommand(interpretator_state *state) {
     char *buffer;
     size_t len = 0;
+    if(feof(state->program)) {
+		syscalls_yield(state);
+		return 1;
+	}
     getline(&buffer, &len, state->program);
     state->buffer = buffer;
     state->position = ftell(state->program);
@@ -248,10 +252,10 @@ char executeNextCommand(interpretator_state *state) {
 
 interpretator_state initInterpretator(char* file, int pid) {
 	interpretator_state state;
-    if(pid == 0 || !(state.program = initProc(file))){
-        file = stdin;
+	state.program = initProc(file);
+    if(pid == 0 || !state.program) {
+        state.program = stdin;
     }
-	
     state.buffer = malloc(256);
     state.operand = malloc(OPERAND_MAX_SIZE);
     state.word = malloc(ESSENCE_NAME_SIZE + 2);
@@ -262,16 +266,20 @@ interpretator_state initInterpretator(char* file, int pid) {
     state.pid = pid;
     state.status = PROC_RUNNING;
     state.name = (char*)malloc(255);
-    strcpy(state.name, file);
-    fillLabels(state.program, state.buffer, state.word, &state.labels);
-    rewind(state.program);
+    if(state.program == stdin) {
+		strcpy(state.name, "stdin");
+	} else {
+		strcpy(state.name, file);
+		fillLabels(state.program, state.buffer, state.word, &state.labels);
+		rewind(state.program);
+	}
     return state;
 }
 
 int launchInterpretator(interpretator_state *state) {
 	char errorCode;
 	if(state->status == PROC_KILLED) {
-		interrupt_handler(state);
+		syscalls_yield(state);
 		return 0;
 	}
     while(errorCode = executeNextCommand(state)) {

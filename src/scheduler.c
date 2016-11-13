@@ -14,7 +14,7 @@ interpretator_state proc[255];
 size_t proc_count = 0;
 size_t proc_current = 0;
 
-void interrupt_handler(interpretator_state state) {
+void interrupt_handler(interpretator_state *state) {
 	if(!scheduler_flag) {
 		return;
 	}
