@@ -2,6 +2,7 @@
 #include <malloc.h>
 #include <stdlib.h>
 #include <string.h>
+#include "scheduler.h"
 #include "errors.h"
 #include "operators.h"
 #include "interpretator.h"
@@ -88,7 +89,7 @@ int addNewElement(char *word, essence *list){
     }
     return list->essenceCount -1 ;
 }
-
+2
 int readVarNum(char *word, essence *variables){
     int result = isVariable(word, variables);
     if(result == -1){
@@ -106,84 +107,97 @@ void addLabel(essence *labels, char *word, int position, FILE *fin){
     fseek(fin, position, SEEK_SET);
 }
 
-char interpretateNextWord(interpretator_state *state){
-    int variableIndex;
-    if(!strcmp(state->word, "if")){
+
+
+
+
+char nonSyscalls(interpretator_state *state){
+    if(!strcmp(state->word, "if")) {
         state->buffer = strparse(state->word, state->buffer);
         int firstOperand = readVarNum(state->word, &state->variables);
         state->buffer = strparse(state->operand, state->buffer);
         state->buffer = strparse(state->word, state->buffer);
         int secondOperand = readVarNum(state->word, &state->variables);
         char result;
-        if(comparations(firstOperand, secondOperand, state->operand, &result)){
-            if(result){
+        if (comparations(firstOperand, secondOperand, state->operand, &result)) {
+            if (result) {
                 state->buffer = strparse(state->word, state->buffer);
-                if(strcmp(state->word, "goto") == 0){
+                if (strcmp(state->word, "goto") == 0) {
                     return goToLabel(state);
                 }
                 return SHIT_HAPPENED;
-            }
-            else{
+            } else {
                 return ALL_OK;
             }
-        }
-        else{
+        } else {
             return SHIT_HAPPENED;
         }
-
-
     } else if(strcmp(state->word, "goto") == 0){
         return goToLabel(state);
 
-    } else if(strcmp(state->word, "print")== 0){
-        state->buffer = strparse(state->word, state->buffer);
-        variableIndex = isVariable(state->word, &state->variables);
-        if(variableIndex != -1){
-            printf("%d\n", state->variables.essenceValues[variableIndex]);
-        }
-        else{
-            printf("%s\n", state->word);
-        }
-        return ALL_OK;
-
-    } else if(strcmp(state->word, "end") == 0) {
-        printf("EXIT\n");
-        return 0;
-
-    } else if(strcmp(state->word, "read") == 0) {
-
-    } else if(strcmp(state->word, "write") == 0) {
-
-    } else if(strcmp(state->word, "cd") == 0) {
-
-    } else if(strcmp(state->word, "kill") == 0) {
-
-    } else if(state->word[strlen(state->word) - 1] == ':'){
+    }
+    else if(state->word[strlen(state->word) - 1] == ':'){
         state->position += strlen(state->word)+1;
         fseek(state->program, state->position, SEEK_SET);
         return executeNextCommand(state);
-    } else{
-        int variableIndex = isVariable(state->word, &state->variables);
-        if(variableIndex == -1) variableIndex = addNewElement(state->word, &state->variables);
-        state->buffer = strparse(state->word, state->buffer);
-        if(state->word[0] != '='){
-            return SHIT_HAPPENED;
-        }
-        state->buffer = strparse(state->word, state->buffer);
-        int firstOperand = readVarNum(state->word, &state->variables);
-        state->buffer = strparse(state->word, state->buffer);
-        state->buffer = strparse(state->operand, state->buffer);
-        if(!state->operand == NULL){
-            state->buffer = strparse(state->word, state->buffer);
-            int secondOperand = readVarNum(state->word, &state->variables);
-            return Operation(firstOperand, secondOperand, state->operand, &state->variables.essenceValues[variableIndex]);
-        }
-        else{
-            state->variables.essenceValues[variableIndex] = firstOperand;
-            return ALL_OK;
-        }
     }
-    return SHIT_HAPPENED;
+    else{
+        return -1;
+    }
+}
+
+
+
+char interpretateNextWord(interpretator_state *state) {
+    int variableIndex;
+    char errorCode;
+    if (state->pid == -1 || -1 == (errorCode = nonSyscalls(state))) {
+        if (strcmp(state->word, "print") == 0) {
+            state->buffer = strparse(state->word, state->buffer);
+            variableIndex = isVariable(state->word, &state->variables);
+            if (variableIndex != -1) {
+                printf("%d\n", state->variables.essenceValues[variableIndex]);
+            } else {
+                printf("%s\n", state->word);
+            }
+            return ALL_OK;
+
+        } else if (strcmp(state->word, "end") == 0) {
+            printf("EXIT\n");
+            return 0;
+
+        } else if (strcmp(state->word, "read") == 0) {
+
+        } else if (strcmp(state->word, "write") == 0) {
+
+        } else if (strcmp(state->word, "cd") == 0) {
+
+        } else if (strcmp(state->word, "kill") == 0) {
+
+        } else {
+            int variableIndex = isVariable(state->word, &state->variables);
+            if (variableIndex == -1) variableIndex = addNewElement(state->word, &state->variables);
+            state->buffer = strparse(state->word, state->buffer);
+            if (state->word[0] != '=') {
+                return SHIT_HAPPENED;
+            }
+            state->buffer = strparse(state->word, state->buffer);
+            int firstOperand = readVarNum(state->word, &state->variables);
+            state->buffer = strparse(state->word, state->buffer);
+            state->buffer = strparse(state->operand, state->buffer);
+            if (!state->operand == NULL) {
+                state->buffer = strparse(state->word, state->buffer);
+                int secondOperand = readVarNum(state->word, &state->variables);
+                return Operation(firstOperand, secondOperand, state->operand,
+                                 &state->variables.essenceValues[variableIndex]);
+            } else {
+                state->variables.essenceValues[variableIndex] = firstOperand;
+                return ALL_OK;
+            }
+        }
+        return SHIT_HAPPENED;
+    }
+    return errorCode;
 }
 
 char goToLabel(interpretator_state *state){
@@ -230,8 +244,8 @@ char executeNextCommand(interpretator_state *state) {
 
 interpretator_state initInterpretator(char* file, int pid) {
 	interpretator_state state;
-    if(!(state.program = initProc(file))){
-        return state;
+    if(pid == -1 || !(state.program = initProc(file))){
+        file = stdin;
     }
     state.buffer = malloc(256);
     state.operand = malloc(OPERAND_MAX_SIZE);

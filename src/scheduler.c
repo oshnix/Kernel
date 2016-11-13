@@ -5,7 +5,6 @@
 #include <stdlib.h>
 #include <sys/time.h>
 #include <string.h>
-
 #include "interpretator.h"
 
 volatile sig_atomic_t scheduler_flag = false;
@@ -32,7 +31,6 @@ void timer_handler(int sig) {
 int main() {
 	struct sigaction sa;
 	struct itimerval timer;
-
 	/* Install timer_handler as the signal handler for SIGVTALRM. */
 	memset (&sa, 0, sizeof (sa));
 	sa.sa_handler = &timer_handler;
@@ -47,13 +45,16 @@ int main() {
 	executing. */
 	setitimer (ITIMER_PROF, &timer, NULL);
 
+	FILE *KernelIn = stdin;
+
 	proc[0] = initInterpretator("res/input", 0);
 	proc_count++;
 	proc[1] = initInterpretator("res/input1", 1);
 	proc_count++;
-	
+
+
+
 	current_state = &proc[0];
-	
 	for(;;)
 		launchInterpretator(current_state);
 

@@ -21,7 +21,6 @@ typedef struct {
 	essence variables;
 	essence labels;
 	int position;
-	
 	int pid;
 } interpretator_state;
 
