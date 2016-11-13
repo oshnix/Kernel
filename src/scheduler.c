@@ -15,8 +15,11 @@ size_t proc_count = 0;
 size_t proc_current = 0;
 
 void interrupt_handler(interpretator_state state) {
+	if(!scheduler_flag) {
+		return;
+	}
 	proc_current = (proc_current + 1) % proc_count;
-	printf("Switch to process with pid %lu!\n", proc_current);
+	//printf("Switch to process with position %lu!\n", proc->position);
 	scheduler_flag = false;
     current_state = &proc[proc_current];
 }
@@ -36,18 +39,18 @@ int main() {
 	sigaction (SIGPROF, &sa, NULL);
 	/* Configure the timer to expire after 25 msec... */
 	timer.it_value.tv_sec = 0;
-	timer.it_value.tv_usec = 25000;
+	timer.it_value.tv_usec = 250000;
 	/* ... and every 250 msec after that. */
 	timer.it_interval.tv_sec = 0;
-	timer.it_interval.tv_usec = 25000;
+	timer.it_interval.tv_usec = 250000;
 	/* Start a virtual timer. It counts down whenever this process is
 	executing. */
-	//setitimer (ITIMER_PROF, &timer, NULL);
+	setitimer (ITIMER_PROF, &timer, NULL);
 
 	proc[0] = initInterpretator("res/input", 0);
 	proc_count++;
-	/*proc[1] = initInterpretator("res/input1", 1);
-	proc_count++;*/
+	proc[1] = initInterpretator("res/input1", 1);
+	proc_count++;
 	
 	current_state = &proc[0];
 	

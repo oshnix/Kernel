@@ -9,7 +9,7 @@
 char executeNextCommand(interpretator_state *state);
 char goToLabel(essence *labels, FILE *fin);
 
-
+extern scheduler_flag;
 
 int isVariable(char *word, essence *list){
     for(int i = 0; i < list->essenceCount; i++){
@@ -199,10 +199,10 @@ char executeNextCommand(interpretator_state *state) {
     getline(&buffer, &len, state->program);
     state->position = ftell(state->program);
     char *word = strtok(buffer, " \n\0");
-    printf("Word: %s\n", word);
+    //printf("Word: %s\n", word);
     char ret = interpretateNextWord(word, state);
     free(buffer);
-    printf("Error code: %i\n", (int)ret);
+    //printf("Error code: %i\n", (int)ret);
     return ret;
 }
 
@@ -224,8 +224,11 @@ interpretator_state initInterpretator(char* file, int pid) {
 int launchInterpretator(interpretator_state *state) {
 	char errorCode;
     while(errorCode = executeNextCommand(state)) {
-		interrupt_handler(state);
+		if(scheduler_flag) {
+			interrupt_handler(state);
+			return errorCode;
+		}
 	}
-	printf("launchInterpretator: %i\n", (int)errorCode);
+	//printf("launchInterpretator: %i\n", (int)errorCode);
     return errorCode;
 }
