@@ -7,9 +7,10 @@
 #include "interpretator.h"
 
 char executeNextCommand(interpretator_state *state);
-char goToLabel(essence *labels, FILE *fin);
+char goToLabel(interpretator_state *state);
 
 extern scheduler_flag;
+
 
 int isVariable(char *word, essence *list){
     for(int i = 0; i < list->essenceCount; i++){
@@ -18,6 +19,25 @@ int isVariable(char *word, essence *list){
         }
     }
     return -1;
+}
+
+char* strparse(char *dest, char *res){
+    static const char delims[] = {' ', '\t', '\n', '\0'};
+    int i, count = sizeof(delims);
+    char state = 1;
+    while(*(res) == ' ' || *(res) == '\t') ++res;
+    while(state){
+        *(dest++) = *(res++);
+        for (i = 0; i < count; i++) {
+            if(*res == delims[i]){
+                state = 0;
+                ++res;
+                *dest = '\0';
+                break;
+            }
+        }
+    }
+    return res;
 }
 
 
@@ -86,21 +106,20 @@ void addLabel(essence *labels, char *word, int position, FILE *fin){
     fseek(fin, position, SEEK_SET);
 }
 
-char interpretateNextWord(char *word, interpretator_state *state){
+char interpretateNextWord(interpretator_state *state){
     int variableIndex;
-    if(!strcmp(word, "if")){
-		
-        word = strtok(NULL, " \n");
-        int firstOperand = readVarNum(word, &state->variables);
-        char *operand = strtok(NULL, " \0\n");
-        word = strtok(NULL, " \n");
-        int secondOperand = readVarNum(word, &state->variables);
+    if(!strcmp(state->word, "if")){
+        state->buffer = strparse(state->word, state->buffer);
+        int firstOperand = readVarNum(state->word, &state->variables);
+        state->buffer = strparse(state->operand, state->buffer);
+        state->buffer = strparse(state->word, state->buffer);
+        int secondOperand = readVarNum(state->word, &state->variables);
         char result;
-        if(comparations(firstOperand, secondOperand, operand, &result)){
+        if(comparations(firstOperand, secondOperand, state->operand, &result)){
             if(result){
-                word = strtok(NULL, " \n");
-                if(strcmp(word, "goto") == 0){
-                    return goToLabel(&state->labels, state->program);
+                state->buffer = strparse(state->word, state->buffer);
+                if(strcmp(state->word, "goto") == 0){
+                    return goToLabel(state);
                 }
                 return SHIT_HAPPENED;
             }
@@ -113,50 +132,51 @@ char interpretateNextWord(char *word, interpretator_state *state){
         }
 
 
-    } else if(strcmp(word, "goto") == 0){
-        return goToLabel(&state->labels, state->program);
+    } else if(strcmp(state->word, "goto") == 0){
+        return goToLabel(state);
 
-    } else if(strcmp(word, "print")== 0){
-        word = strtok(NULL, " \n");
-        variableIndex = isVariable(word, &state->variables);
+    } else if(strcmp(state->word, "print")== 0){
+        state->buffer = strparse(state->word, state->buffer);
+        variableIndex = isVariable(state->word, &state->variables);
         if(variableIndex != -1){
             printf("%d\n", state->variables.essenceValues[variableIndex]);
         }
         else{
-            printf("%s\n", word);
+            printf("%s\n", state->word);
         }
         return ALL_OK;
 
-    } else if(strcmp(word, "end") == 0) {
+    } else if(strcmp(state->word, "end") == 0) {
         printf("EXIT\n");
         return 0;
 
-    } else if(strcmp(word, "read") == 0) {
+    } else if(strcmp(state->word, "read") == 0) {
 
-    } else if(strcmp(word, "write") == 0) {
+    } else if(strcmp(state->word, "write") == 0) {
 
-    } else if(strcmp(word, "cd") == 0) {
+    } else if(strcmp(state->word, "cd") == 0) {
 
-    } else if(strcmp(word, "kill") == 0) {
+    } else if(strcmp(state->word, "kill") == 0) {
 
-    } else if(word[strlen(word) - 1] == ':'){
-        state->position += strlen(word)+1;
+    } else if(state->word[strlen(state->word) - 1] == ':'){
+        state->position += strlen(state->word)+1;
         fseek(state->program, state->position, SEEK_SET);
         return executeNextCommand(state);
     } else{
-        int variableIndex = isVariable(word, &state->variables);
-        if(variableIndex == -1) variableIndex = addNewElement(word, &state->variables);
-        word = strtok(NULL, " ");
-        if(word[0] != '='){
+        int variableIndex = isVariable(state->word, &state->variables);
+        if(variableIndex == -1) variableIndex = addNewElement(state->word, &state->variables);
+        state->buffer = strparse(state->word, state->buffer);
+        if(state->word[0] != '='){
             return SHIT_HAPPENED;
         }
-        word = strtok(NULL, " ");
-        int firstOperand = readVarNum(word, &state->variables);
-        char *operand = strtok(NULL, " \0\n");
-        if(!operand == NULL){
-            word = strtok(NULL, " \n");
-            int secondOperand = readVarNum(word, &state->variables);
-            return Operation(firstOperand, secondOperand, operand, &state->variables.essenceValues[variableIndex]);;
+        state->buffer = strparse(state->word, state->buffer);
+        int firstOperand = readVarNum(state->word, &state->variables);
+        state->buffer = strparse(state->word, state->buffer);
+        state->buffer = strparse(state->operand, state->buffer);
+        if(!state->operand == NULL){
+            state->buffer = strparse(state->word, state->buffer);
+            int secondOperand = readVarNum(state->word, &state->variables);
+            return Operation(firstOperand, secondOperand, state->operand, &state->variables.essenceValues[variableIndex]);
         }
         else{
             state->variables.essenceValues[variableIndex] = firstOperand;
@@ -166,24 +186,24 @@ char interpretateNextWord(char *word, interpretator_state *state){
     return SHIT_HAPPENED;
 }
 
-char goToLabel(essence *labels, FILE *fin){
-    char *word = strtok(NULL, " \n");
-    int variableIndex = isVariable(word, labels);
+char goToLabel(interpretator_state *state){
+    state->buffer = strparse(state->word, state->buffer);
+    int variableIndex = isVariable(state->word, &state->labels);
     if(variableIndex == -1){
-        return 0;
+        return SHIT_HAPPENED;
     }
-    int position = labels->essenceValues[variableIndex];
-    fseek(fin, position, SEEK_SET);
-    return 1;
+    int position = state->labels.essenceValues[variableIndex];
+    fseek(state->program, position, SEEK_SET);
+    return ALL_OK;
 }
 
-void fillLabels(FILE *fin, char *buffer, essence *labels){
-    char *word = "\0";
+void fillLabels(FILE *fin, char *buffer, char *word, essence *labels){
     size_t len = 0;
     while(1){
         int position = ftell(fin);
         getline(&buffer, &len, fin);
-        word = strtok(buffer, " \n\0");
+        buffer = strparse(word, buffer);
+        printf("%s %s\n", buffer, word);
         if(word[strlen(word) - 1] == ':'){
             addLabel(labels, word, position, fin);
         }
@@ -194,15 +214,17 @@ void fillLabels(FILE *fin, char *buffer, essence *labels){
 }
 
 char executeNextCommand(interpretator_state *state) {
-    char *buffer = malloc(256);
+    char *buffer;
     size_t len = 0;
     getline(&buffer, &len, state->program);
+    state->buffer = buffer;
     state->position = ftell(state->program);
-    char *word = strtok(buffer, " \n\0");
+    state->buffer = strparse(state->word, state->buffer);
     //printf("Word: %s\n", word);
-    char ret = interpretateNextWord(word, state);
-    free(buffer);
+    char ret = interpretateNextWord(state);
+    //free(buffer);
     //printf("Error code: %i\n", (int)ret);
+    free(buffer);
     return ret;
 }
 
@@ -212,11 +234,13 @@ interpretator_state initInterpretator(char* file, int pid) {
         return state;
     }
     state.buffer = malloc(256);
+    state.operand = malloc(OPERAND_MAX_SIZE);
+    state.word = malloc(ESSENCE_NAME_SIZE + 2);
     state.variables = essenceInit();
     state.labels = essenceInit();
     state.position = ftell(state.program);
     state.pid = pid;
-    fillLabels(state.program, state.buffer, &state.labels);
+    fillLabels(state.program, state.buffer, state.word, &state.labels);
     rewind(state.program);
     return state;
 }

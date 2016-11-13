@@ -4,6 +4,7 @@
 #define START_ESSENCE_SIZE 8
 #define ESSENCE_NAME_SIZE 50
 #define SIZE_OF_OPERATION 3
+#define OPERAND_MAX_SIZE 6
 
 typedef struct {
     int *essenceValues;
@@ -15,6 +16,8 @@ typedef struct {
 typedef struct {
 	FILE* program;
 	char *buffer;
+	char *word;
+	char *operand;
 	essence variables;
 	essence labels;
 	int position;
