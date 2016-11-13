@@ -6,6 +6,7 @@
 #include "errors.h"
 #include "operators.h"
 #include "interpretator.h"
+#include "syscalls.h"
 
 char executeNextCommand(interpretator_state *state);
 char goToLabel(interpretator_state *state);
@@ -89,7 +90,7 @@ int addNewElement(char *word, essence *list){
     }
     return list->essenceCount -1 ;
 }
-2
+
 int readVarNum(char *word, essence *variables){
     int result = isVariable(word, variables);
     if(result == -1){
@@ -163,6 +164,7 @@ char interpretateNextWord(interpretator_state *state) {
             return ALL_OK;
 
         } else if (strcmp(state->word, "end") == 0) {
+			syscalls_kill(state->pid);
             printf("EXIT\n");
             return 0;
 
@@ -170,6 +172,8 @@ char interpretateNextWord(interpretator_state *state) {
 
         } else if (strcmp(state->word, "write") == 0) {
 
+        } else if (strcmp(state->word, "jobs") == 0) {
+			syscalls_jobs();
         } else if (strcmp(state->word, "cd") == 0) {
 
         } else if (strcmp(state->word, "kill") == 0) {
@@ -244,16 +248,21 @@ char executeNextCommand(interpretator_state *state) {
 
 interpretator_state initInterpretator(char* file, int pid) {
 	interpretator_state state;
-    if(pid == -1 || !(state.program = initProc(file))){
+    if(pid == 0 || !(state.program = initProc(file))){
         file = stdin;
     }
+	
     state.buffer = malloc(256);
     state.operand = malloc(OPERAND_MAX_SIZE);
     state.word = malloc(ESSENCE_NAME_SIZE + 2);
     state.variables = essenceInit();
     state.labels = essenceInit();
     state.position = ftell(state.program);
+    
     state.pid = pid;
+    state.status = PROC_RUNNING;
+    state.name = (char*)malloc(255);
+    strcpy(state.name, file);
     fillLabels(state.program, state.buffer, state.word, &state.labels);
     rewind(state.program);
     return state;
@@ -261,12 +270,15 @@ interpretator_state initInterpretator(char* file, int pid) {
 
 int launchInterpretator(interpretator_state *state) {
 	char errorCode;
+	if(state->status == PROC_KILLED) {
+		interrupt_handler(state);
+		return 0;
+	}
     while(errorCode = executeNextCommand(state)) {
 		if(scheduler_flag) {
 			interrupt_handler(state);
 			return errorCode;
 		}
 	}
-	//printf("launchInterpretator: %i\n", (int)errorCode);
     return errorCode;
 }

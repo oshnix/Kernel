@@ -13,6 +13,12 @@ typedef struct {
     char **essenceNames;
 }essence;
 
+typedef enum {
+	PROC_RUNNING,
+	PROC_BLOCKING_IO,
+	PROC_KILLED
+} proc_status;
+
 typedef struct {
 	FILE* program;
 	char *buffer;
@@ -21,7 +27,10 @@ typedef struct {
 	essence variables;
 	essence labels;
 	int position;
+	// proc
 	int pid;
+	proc_status status;
+	char* name;
 } interpretator_state;
 
 interpretator_state initInterpretator(char* file, int pid);

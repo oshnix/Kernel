@@ -17,6 +17,7 @@ build/%.o: src/%.c
 	$(CC) $(CDK) $(LDK) $@ $< $(CFLAGS)
 
 
-#clean:
-#	rm -rf $(TARGET)
+clean:
+	rm -rf $(TARGET) build/
+	mkdir build
 
