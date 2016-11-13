@@ -7,7 +7,7 @@ LDK = -o
 CDK= -c
 TARGET=main
 SRC=$(wildcard src/*.c)
-OBJ=$(patsubst src/%.c, build/%.o , $(SRC))
+OBJ=$(SRC:src/%.c=build/%.o)
 FILES = main.c
 
 mainmake: $(OBJ)
