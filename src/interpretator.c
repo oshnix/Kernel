@@ -2,15 +2,20 @@
 #include <malloc.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+#include <sys/poll.h>
+#include <stdbool.h>
 #include "scheduler.h"
 #include "errors.h"
 #include "operators.h"
 #include "interpretator.h"
+#include "syscalls.h"
 
 char executeNextCommand(interpretator_state *state);
 char goToLabel(interpretator_state *state);
 
 extern scheduler_flag;
+extern proc_foreground;
 
 
 int isVariable(char *word, essence *list){
@@ -32,7 +37,6 @@ char* strparse(char *dest, char *res){
         for (i = 0; i < count; i++) {
             if(*res == delims[i]){
                 state = 0;
-                ++res;
                 *dest = '\0';
                 break;
             }
@@ -89,7 +93,7 @@ int addNewElement(char *word, essence *list){
     }
     return list->essenceCount -1 ;
 }
-2
+
 int readVarNum(char *word, essence *variables){
     int result = isVariable(word, variables);
     if(result == -1){
@@ -151,7 +155,8 @@ char nonSyscalls(interpretator_state *state){
 char interpretateNextWord(interpretator_state *state) {
     int variableIndex;
     char errorCode;
-    if (state->pid == -1 || -1 == (errorCode = nonSyscalls(state))) {
+    //printf("Working with: %s\n", state->buffer);
+    if (state->pid == 0 || -1 == (errorCode = nonSyscalls(state))) {
         if (strcmp(state->word, "print") == 0) {
             state->buffer = strparse(state->word, state->buffer);
             variableIndex = isVariable(state->word, &state->variables);
@@ -163,17 +168,44 @@ char interpretateNextWord(interpretator_state *state) {
             return ALL_OK;
 
         } else if (strcmp(state->word, "end") == 0) {
-            printf("EXIT\n");
-            return 0;
+			printf("Process %s exits\n", state->name);
+			syscalls_kill(state->pid);
+            return 2;
 
         } else if (strcmp(state->word, "read") == 0) {
-
+			return ALL_OK;
+        } else if (strcmp(state->word, "fg") == 0) {
+			long pid = -1;
+			char* endptr;
+			state->buffer = strparse(state->word, state->buffer);
+			pid = strtol(state->word, &endptr, 10);
+			syscalls_fg(pid);
+			return ALL_OK;
+        } else if (strcmp(state->word, "bg") == 0) {
+			long pid = -1;
+			char* endptr;
+			state->buffer = strparse(state->word, state->buffer);
+			pid = strtol(state->word, &endptr, 10);
+			syscalls_bg(pid);
+			return ALL_OK;
         } else if (strcmp(state->word, "write") == 0) {
-
-        } else if (strcmp(state->word, "cd") == 0) {
-
+			return ALL_OK;
+        } else if (strcmp(state->word, "jobs") == 0) {
+			syscalls_jobs();
+			return ALL_OK;
         } else if (strcmp(state->word, "kill") == 0) {
-
+			long pid = -1;
+			char* endptr;
+			state->buffer = strparse(state->word, state->buffer);
+			pid = strtol(state->word, &endptr, 10);
+			syscalls_kill_verbose(pid);
+			return ALL_OK;
+        } else if (strcmp(state->word, "cd") == 0) {
+			return ALL_OK;
+        } else if (strcmp(state->word, "exec") == 0) {
+			state->buffer = strparse(state->word, state->buffer);
+			syscalls_exec(state->word);
+			return ALL_OK;
         } else {
             int variableIndex = isVariable(state->word, &state->variables);
             if (variableIndex == -1) variableIndex = addNewElement(state->word, &state->variables);
@@ -183,9 +215,8 @@ char interpretateNextWord(interpretator_state *state) {
             }
             state->buffer = strparse(state->word, state->buffer);
             int firstOperand = readVarNum(state->word, &state->variables);
-            state->buffer = strparse(state->word, state->buffer);
             state->buffer = strparse(state->operand, state->buffer);
-            if (!state->operand == NULL) {
+            if (!(state->operand[0] == '\0' || state->operand[0] == '\n')) {
                 state->buffer = strparse(state->word, state->buffer);
                 int secondOperand = readVarNum(state->word, &state->variables);
                 return Operation(firstOperand, secondOperand, state->operand,
@@ -217,7 +248,7 @@ void fillLabels(FILE *fin, char *buffer, char *word, essence *labels){
         int position = ftell(fin);
         getline(&buffer, &len, fin);
         buffer = strparse(word, buffer);
-        printf("%s %s\n", buffer, word);
+        //printf("%s %s\n", buffer, word);
         if(word[strlen(word) - 1] == ':'){
             addLabel(labels, word, position, fin);
         }
@@ -230,43 +261,75 @@ void fillLabels(FILE *fin, char *buffer, char *word, essence *labels){
 char executeNextCommand(interpretator_state *state) {
     char *buffer;
     size_t len = 0;
+    int fd_ret;
+	if(state->pid == 0) {
+		fd_ret = poll(state->fds, 2, 5 * 1000);
+		if(!(state->fds[0].revents & POLLIN) || proc_foreground != state->pid) {
+			state->status = PROC_BLOCKING_IO;
+			return 2;
+		}
+	}
+	state->status = PROC_RUNNING;
     getline(&buffer, &len, state->program);
     state->buffer = buffer;
     state->position = ftell(state->program);
     state->buffer = strparse(state->word, state->buffer);
-    //printf("Word: %s\n", word);
     char ret = interpretateNextWord(state);
-    //free(buffer);
-    //printf("Error code: %i\n", (int)ret);
+    if(state->pid == 0 && proc_foreground == state->pid) {
+		printf("sh > ");
+		fflush(stdout);
+		fflush(stdin);
+	}
     free(buffer);
     return ret;
 }
 
 interpretator_state initInterpretator(char* file, int pid) {
 	interpretator_state state;
-    if(pid == -1 || !(state.program = initProc(file))){
-        file = stdin;
-    }
+	state.program = initProc(file);
+    if(pid == 0) {
+        state.program = stdin;
+    } else if (!state.program) {
+		return state;
+	}
     state.buffer = malloc(256);
     state.operand = malloc(OPERAND_MAX_SIZE);
     state.word = malloc(ESSENCE_NAME_SIZE + 2);
     state.variables = essenceInit();
     state.labels = essenceInit();
     state.position = ftell(state.program);
+    
     state.pid = pid;
-    fillLabels(state.program, state.buffer, state.word, &state.labels);
-    rewind(state.program);
+    state.status = PROC_RUNNING;
+    state.name = (char*)malloc(255);
+    if(state.program == stdin) {
+		strcpy(state.name, "stdin");
+		state.fds[0].fd = STDIN_FILENO;
+		state.fds[0].events = POLLIN;
+		state.fds[1].fd = STDOUT_FILENO;
+		state.fds[1].events = POLLOUT;
+	} else {
+		strcpy(state.name, file);
+		fillLabels(state.program, state.buffer, state.word, &state.labels);
+		rewind(state.program);
+	}
     return state;
 }
 
 int launchInterpretator(interpretator_state *state) {
 	char errorCode;
+	if(state->status == PROC_KILLED) {
+		syscalls_yield(state);
+		printf("switch to dead process\n");
+		return 0;
+	}
     while(errorCode = executeNextCommand(state)) {
+		if(errorCode == 2)
+			scheduler_flag = true;
 		if(scheduler_flag) {
 			interrupt_handler(state);
 			return errorCode;
 		}
 	}
-	//printf("launchInterpretator: %i\n", (int)errorCode);
     return errorCode;
 }

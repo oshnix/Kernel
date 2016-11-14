@@ -3,8 +3,6 @@ Y = 1
 loop: Y = Y * X
     X = X - 1
 if X >= 1 goto loop
-  print 56
-X = 100000
 goto loop
 print y
       end
