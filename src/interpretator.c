@@ -156,7 +156,7 @@ char interpretateNextWord(interpretator_state *state) {
     int variableIndex;
     char errorCode;
     //printf("Working with: %s\n", state->buffer);
-    if (state->pid == -1 || -1 == (errorCode = nonSyscalls(state))) {
+    if (state->pid == 0 || -1 == (errorCode = nonSyscalls(state))) {
         if (strcmp(state->word, "print") == 0) {
             state->buffer = strparse(state->word, state->buffer);
             variableIndex = isVariable(state->word, &state->variables);
