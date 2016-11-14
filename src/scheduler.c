@@ -10,30 +10,58 @@
 #include "syscalls.h"
 
 volatile sig_atomic_t scheduler_flag = false;
+volatile sig_atomic_t term_flag = false;
+volatile sig_atomic_t stop_flag = false;
+
 interpretator_state* current_state;
 interpretator_state proc[256];
 size_t proc_count = 0;
 size_t proc_current = 0;
+size_t proc_foreground = 0;
 
 void interrupt_handler(interpretator_state *state) {
-	if(!scheduler_flag) {
-		return;
+	if(scheduler_flag) {
+		do {
+			proc_current = (proc_current + 1) % 256;
+		} while(proc[proc_current].status == PROC_KILLED || proc[proc_current].status == PROC_STOPPED);
+		scheduler_flag = false;
+		current_state = &proc[proc_current];
 	}
-	do {
-		proc_current = (proc_current + 1) % 256;
-	} while(proc[proc_current].status == PROC_KILLED);
-	scheduler_flag = false;
-    current_state = &proc[proc_current];
+	if(term_flag) {
+		term_flag = false;
+		syscalls_kill_verbose(proc_foreground);
+		printf("sh > ");
+		fflush(stdout);
+		proc_foreground = 0;
+	}
+	if(stop_flag) {
+		stop_flag = false;
+		proc[proc_foreground].status = PROC_STOPPED;
+		printf("[%i] Stopped\n", proc_foreground);
+		printf("sh > ");
+		fflush(stdout);
+		proc_foreground = 0;
+	}
 }
 
 void timer_handler(int sig) {
 	scheduler_flag = true;
 }
 
+void term_handler(int sig) {
+	term_flag = true;
+}
+
+void stop_handler(int sig) {
+	stop_flag = true;
+}
+
 
 int main() {
 	struct sigaction sa;
 	struct itimerval timer;
+	signal(SIGINT, term_handler);
+	signal(SIGTSTP, stop_handler);
 
 	/* Install timer_handler as the signal handler for SIGVTALRM. */
 	memset (&sa, 0, sizeof (sa));

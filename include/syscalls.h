@@ -6,5 +6,7 @@ int syscalls_kill(int pid);
 void syscalls_kill_verbose(int pid);
 void syscalls_yield();
 void syscalls_exec(char* name);
+void syscalls_bg(int pid);
+void syscalls_fg(int pid);
 
 #endif

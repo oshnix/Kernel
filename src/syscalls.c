@@ -6,6 +6,8 @@
 extern size_t proc_count;
 extern interpretator_state proc[256];
 extern scheduler_flag;
+extern proc_foreground;
+
 void interrupt_handler(interpretator_state*);
 
 void syscalls_jobs() {
@@ -17,6 +19,9 @@ void syscalls_jobs() {
 		switch(proc[i].status) {
 			case PROC_RUNNING:
 				printf("Running           ");
+				break;
+			case PROC_STOPPED:
+				printf("Stopped           ");
 				break;
 			case PROC_BLOCKING_IO:
 				printf("Waiting for I/O   ");
@@ -76,4 +81,20 @@ int syscalls_kill(int pid) {
 		exit(0);
 	}
 	return 0;
+}
+
+void syscalls_bg(int pid) {
+	if(proc[pid].status != PROC_KILLED) {
+		proc[pid].status = PROC_RUNNING;
+	} else {
+		printf("No process with pid %i\n", pid);
+	}
+}
+void syscalls_fg(int pid) {
+	if(proc[pid].status != PROC_KILLED) {
+		proc_foreground = pid;
+		proc[pid].status = PROC_RUNNING;
+	} else {
+		printf("No process with pid %i\n", pid);
+	}
 }

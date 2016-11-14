@@ -15,6 +15,7 @@ char executeNextCommand(interpretator_state *state);
 char goToLabel(interpretator_state *state);
 
 extern scheduler_flag;
+extern proc_foreground;
 
 
 int isVariable(char *word, essence *list){
@@ -173,6 +174,20 @@ char interpretateNextWord(interpretator_state *state) {
 
         } else if (strcmp(state->word, "read") == 0) {
 			return ALL_OK;
+        } else if (strcmp(state->word, "fg") == 0) {
+			long pid = -1;
+			char* endptr;
+			state->buffer = strparse(state->word, state->buffer);
+			pid = strtol(state->word, &endptr, 10);
+			syscalls_fg(pid);
+			return ALL_OK;
+        } else if (strcmp(state->word, "bg") == 0) {
+			long pid = -1;
+			char* endptr;
+			state->buffer = strparse(state->word, state->buffer);
+			pid = strtol(state->word, &endptr, 10);
+			syscalls_bg(pid);
+			return ALL_OK;
         } else if (strcmp(state->word, "write") == 0) {
 			return ALL_OK;
         } else if (strcmp(state->word, "jobs") == 0) {
@@ -249,7 +264,7 @@ char executeNextCommand(interpretator_state *state) {
     int fd_ret;
 	if(state->pid == 0) {
 		fd_ret = poll(state->fds, 2, 5 * 1000);
-		if(!(state->fds[0].revents & POLLIN)) {
+		if(!(state->fds[0].revents & POLLIN) || proc_foreground != state->pid) {
 			state->status = PROC_BLOCKING_IO;
 			return 2;
 		}
@@ -260,7 +275,7 @@ char executeNextCommand(interpretator_state *state) {
     state->position = ftell(state->program);
     state->buffer = strparse(state->word, state->buffer);
     char ret = interpretateNextWord(state);
-    if(state->pid == 0) {
+    if(state->pid == 0 && proc_foreground == state->pid) {
 		printf("sh > ");
 		fflush(stdout);
 		fflush(stdin);

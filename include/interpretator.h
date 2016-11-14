@@ -18,6 +18,7 @@ typedef struct {
 
 typedef enum {
 	PROC_RUNNING,
+	PROC_STOPPED,
 	PROC_BLOCKING_IO,
 	PROC_KILLED
 } proc_status;
