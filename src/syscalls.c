@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include "syscalls.h"
+#include <stdlib.h>
 #include "interpretator.h"
 
 extern size_t proc_count;
