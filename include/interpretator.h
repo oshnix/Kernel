@@ -1,6 +1,9 @@
 #ifndef _INTERPRETATOR_H_ 
 #define _INTERPRETATOR_H_
 
+#include <unistd.h>
+#include <sys/poll.h>
+
 #define START_ESSENCE_SIZE 8
 #define ESSENCE_NAME_SIZE 50
 #define SIZE_OF_OPERATION 3
@@ -31,6 +34,7 @@ typedef struct {
 	int pid;
 	proc_status status;
 	char* name;
+	struct pollfd fds[2];
 } interpretator_state;
 
 interpretator_state initInterpretator(char* file, int pid);

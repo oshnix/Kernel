@@ -2,6 +2,8 @@
 #include <malloc.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+#include <sys/poll.h>
 #include "scheduler.h"
 #include "errors.h"
 #include "operators.h"
@@ -165,7 +167,7 @@ char interpretateNextWord(interpretator_state *state) {
 
         } else if (strcmp(state->word, "end") == 0) {
 			syscalls_kill(state->pid);
-            printf("EXIT\n");
+            printf("Process %s exits\n", state->name);
             return 0;
 
         } else if (strcmp(state->word, "read") == 0) {
@@ -176,8 +178,9 @@ char interpretateNextWord(interpretator_state *state) {
 			syscalls_jobs();
         } else if (strcmp(state->word, "cd") == 0) {
 
-        } else if (strcmp(state->word, "kill") == 0) {
-
+        } else if (strcmp(state->word, "exec") == 0) {
+			state->buffer = strparse(state->word, state->buffer);
+			syscalls_exec(state->word);
         } else {
             int variableIndex = isVariable(state->word, &state->variables);
             if (variableIndex == -1) variableIndex = addNewElement(state->word, &state->variables);
@@ -234,9 +237,14 @@ void fillLabels(FILE *fin, char *buffer, char *word, essence *labels){
 char executeNextCommand(interpretator_state *state) {
     char *buffer;
     size_t len = 0;
-    if(feof(state->program)) {
-		syscalls_yield(state);
-		return 1;
+    int fd_ret;
+	if(state->program == stdin) {
+		fd_ret = poll(state->fds, 2, 5 * 1000);
+		if(!(state->fds[0].revents & POLLIN)) {
+			state->status = PROC_BLOCKING_IO;
+			syscalls_yield();
+			return 1;
+		}
 	}
     getline(&buffer, &len, state->program);
     state->buffer = buffer;
@@ -268,6 +276,10 @@ interpretator_state initInterpretator(char* file, int pid) {
     state.name = (char*)malloc(255);
     if(state.program == stdin) {
 		strcpy(state.name, "stdin");
+		state.fds[0].fd = STDIN_FILENO;
+		state.fds[0].events = POLLIN;
+		state.fds[1].fd = STDOUT_FILENO;
+		state.fds[1].events = POLLOUT;
 	} else {
 		strcpy(state.name, file);
 		fillLabels(state.program, state.buffer, state.word, &state.labels);

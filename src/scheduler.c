@@ -10,7 +10,7 @@
 
 volatile sig_atomic_t scheduler_flag = false;
 interpretator_state* current_state;
-interpretator_state proc[255];
+interpretator_state proc[256];
 size_t proc_count = 0;
 size_t proc_current = 0;
 
@@ -21,7 +21,7 @@ void interrupt_handler(interpretator_state *state) {
 	do {
 		proc_current = (proc_current + 1) % 255;
 	} while(proc[proc_current].status == PROC_KILLED);
-	printf("Switch to process with position %li!\n", proc_current);
+	//printf("Switch to process with position %li!\n", proc_current);
 	scheduler_flag = false;
     current_state = &proc[proc_current];
 }
@@ -46,16 +46,11 @@ int main() {
 	timer.it_interval.tv_sec = 0;
 	timer.it_interval.tv_usec = 250000;
 	
-	for(size_t i = 0; i < 255; i++) {
+	for(size_t i = 0; i < 256; i++) {
 		proc[i].status = PROC_KILLED;
 	}
 	
-	proc[0] = initInterpretator(NULL, 0);
-	proc_count++;
-	proc[1] = initInterpretator("res/input1", 1);
-	proc_count++;
-	proc[2] = initInterpretator("res/input2", 2);
-	proc_count++;
+	syscalls_exec(NULL);
 	
 	current_state = &proc[0];
 	
