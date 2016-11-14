@@ -1,12 +1,14 @@
 #include "filesystem.h"
+#include "errors.h"
 
 
 void addFile(file *parent, file *child){
     if(parent->actualSize == parent->usedSize){
         parent->actualSize += DEFAULT_INCREASE;
-        parent->content = realloc(parent->content, parent->actualSize);
+        parent->content = realloc(parent->content, parent->actualSize * sizeof(record));
     }
-    *((file**)(parent->content + parent->usedSize)) = child;
+    *((file**)(parent->content + sizeof(void*)*parent->usedSize)) = child;
+    printf("Add new: %p %p\n", parent, child);
     ++parent->usedSize;
 }
 
@@ -16,6 +18,21 @@ void reWriteContent(file *regularFile, char *content, size_t content_len){
     regularFile->actualSize = regularFile->usedSize = content_len;
 }
 
+file** listDirectoryContent(file *directory, int *size){
+    if(directory->type != 'd'){
+        return IS_NOT_A_DIRECTORY;
+    }
+    else{
+        *size = directory->usedSize;
+        return (file**)directory->content;
+    }
+}
+
+char printFileInfo(FILE* fout, file* fileToPrint){
+    fprintf(fout, "%s: %d %c %d\n", fileToPrint->name, fileToPrint->inode, fileToPrint->type, fileToPrint->usedSize);
+
+}
+
 void addContent(file *regularFile, char *content, size_t content_len){
     regularFile->content = realloc(regularFile->content, regularFile->actualSize + content_len + 1);
     strncpy((char*)(regularFile->content + regularFile->actualSize - 1), content, content_len);
@@ -23,8 +40,11 @@ void addContent(file *regularFile, char *content, size_t content_len){
 }
 
 
-file* newFile(file *parent, char *filename, char type){
+file* newFile(file *parent, char *filename, char type, file* prevFile){
     file *newFile = malloc(sizeof(file));
+    if(parent == NULL){
+        parent = newFile;
+    }
     newFile->parent = parent;
     newFile->inode = maxInode;
     ++maxInode;
@@ -33,9 +53,7 @@ file* newFile(file *parent, char *filename, char type){
     newFile->actualSize = 0;
     newFile->usedSize = 0;
     newFile->content = NULL;
-    if(parent != NULL){
-        addFile(parent, newFile);
-    }
+    addFile(parent, newFile);
     return newFile;
 }
 
@@ -52,10 +70,15 @@ int main(){
     file *profile = newFile(home, "profile", '-');
     char hello[] = "Hello, world!";
     char moreHel[] ="\nHalLo";
-    file *prof = *(file**)home->content;
-    printf("Prof: %d %d %d %s\n", prof->inode, prof->actualSize, prof->usedSize, (char*)prof->content);
-    reWriteContent(prof, hello, sizeof(hello));
+    file *prof = *(file**)(home->content + sizeof(void*));
+    reWriteContent(profile, hello, sizeof(hello));
     addContent(profile, moreHel, sizeof(moreHel));
-    printf("Prof: %d %d %d %s\n", profile->inode, profile->actualSize, profile->usedSize, (char*)profile->content);
+    int count;
+    file **fileList = listDirectoryContent(home, &count);
+    printf("Files in directory: %s\n", fileList[0]->name);
+    for(int i = 0; i < count; i++){
+        printFileInfo(stdout, fileList[i]);
+        fflush(stdout);
+    }
     return 0;
 }

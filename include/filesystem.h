@@ -21,6 +21,19 @@ typedef struct file{
 }file;
 #pragma pack(pop)
 
+typedef struct record{
+    file *previous;
+    /*
+     * previous == NULL - сама директория
+     */
+    file *next;
+    /*
+     * next == NULL - последний файл в списке.
+     */
+
+    file *current;
+};
+
 #define DEFAULT_INCREASE 8
 
 

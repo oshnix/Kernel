@@ -6,4 +6,11 @@ typedef enum{
     ALL_OK = 1
 }errors;
 
+typedef enum {
+    NO_PROBLEM_FOUND = 0,
+    IS_NOT_A_DIRECTORY = -1,
+    IS_NOT_A_REGULAR_FILE
+}fileSystemErrors;
+
+
 #endif
