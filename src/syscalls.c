@@ -72,4 +72,8 @@ int syscalls_kill(int pid) {
 	}
 	proc[pid].status = PROC_KILLED;
 	proc_count--;
+	if(proc_count == 0 || pid == 0) {
+		exit(0);
+	}
+	return 0;
 }

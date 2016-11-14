@@ -178,6 +178,13 @@ char interpretateNextWord(interpretator_state *state) {
         } else if (strcmp(state->word, "jobs") == 0) {
 			syscalls_jobs();
 			return ALL_OK;
+        } else if (strcmp(state->word, "kill") == 0) {
+			long pid = -1;
+			char* endptr;
+			state->buffer = strparse(state->word, state->buffer);
+			pid = strtol(state->word, &endptr, 10);
+			syscalls_kill_verbose(pid);
+			return ALL_OK;
         } else if (strcmp(state->word, "cd") == 0) {
 			return ALL_OK;
         } else if (strcmp(state->word, "exec") == 0) {
