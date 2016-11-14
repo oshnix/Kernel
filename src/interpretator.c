@@ -168,8 +168,8 @@ char interpretateNextWord(interpretator_state *state) {
             return ALL_OK;
 
         } else if (strcmp(state->word, "end") == 0) {
+			printf("Process %s exits\n", state->name);
 			syscalls_kill(state->pid);
-            printf("Process %s exits\n", state->name);
             return 2;
 
         } else if (strcmp(state->word, "read") == 0) {
@@ -247,10 +247,6 @@ char executeNextCommand(interpretator_state *state) {
 		if(!(state->fds[0].revents & POLLIN)) {
 			state->status = PROC_BLOCKING_IO;
 			return 2;
-		} else {
-			printf("sh > ");
-			fflush(stdout);
-			fflush(stdin);
 		}
 	}
 	state->status = PROC_RUNNING;
@@ -259,6 +255,11 @@ char executeNextCommand(interpretator_state *state) {
     state->position = ftell(state->program);
     state->buffer = strparse(state->word, state->buffer);
     char ret = interpretateNextWord(state);
+    if(state->pid == 0) {
+		printf("sh > ");
+		fflush(stdout);
+		fflush(stdin);
+	}
     free(buffer);
     return ret;
 }
@@ -266,9 +267,11 @@ char executeNextCommand(interpretator_state *state) {
 interpretator_state initInterpretator(char* file, int pid) {
 	interpretator_state state;
 	state.program = initProc(file);
-    if(pid == 0 || !state.program) {
+    if(pid == 0) {
         state.program = stdin;
-    }
+    } else if (!state.program) {
+		return state;
+	}
     state.buffer = malloc(256);
     state.operand = malloc(OPERAND_MAX_SIZE);
     state.word = malloc(ESSENCE_NAME_SIZE + 2);

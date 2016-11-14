@@ -37,6 +37,10 @@ void syscalls_exec(char* name) {
 		}
 	}
 	proc[pid] = initInterpretator(name, pid);
+	if(!proc[pid].program) {
+		syscalls_kill(pid);
+		printf("sh: file %s not exists\n", name);
+	}
 	proc_count++;
 }
 
@@ -54,9 +58,17 @@ void syscalls_kill_verbose(int pid) {
 }
 
 int syscalls_kill(int pid) {
-	printf("Removing process %i\n", pid);
 	if(proc[pid].status == PROC_KILLED) {
 		return 1;
+	}
+	if(proc[pid].program) {
+		free(proc[pid].name);
+		free(proc[pid].variables.essenceValues);
+		for(int i = 0; i < proc[pid].variables.essenceCount; i++) {
+			free(proc[pid].variables.essenceNames[i]);
+		}
+		free(proc[pid].variables.essenceNames);
+		fclose(proc[pid].program);
 	}
 	proc[pid].status = PROC_KILLED;
 	proc_count--;

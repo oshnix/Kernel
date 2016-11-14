@@ -22,8 +22,6 @@ void interrupt_handler(interpretator_state *state) {
 	do {
 		proc_current = (proc_current + 1) % 256;
 	} while(proc[proc_current].status == PROC_KILLED);
-	if(proc_current == 0 && state->pid != 0)
-		printf("Switching from %li\n", state->pid);
 	scheduler_flag = false;
     current_state = &proc[proc_current];
 }
@@ -56,6 +54,8 @@ int main() {
 	
 	current_state = &proc[0];
 	
+	printf("sh > ");
+	fflush(stdout);
 	setitimer (ITIMER_PROF, &timer, NULL);
 	while(proc_count)
 		launchInterpretator(current_state);
