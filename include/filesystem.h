@@ -33,6 +33,22 @@ typedef struct record{
      file  *current;
 }record;
 
+
+void addFile(file *parent, file *child, record* previous);
+record* listDirectoryContent(file *directory);
+void cutRecord(record *recordToDelete);
+char removeFile(char *filename, file *currentDirectory);
+file* navigate(char *filename, file *currentDirectory);
+void reWriteContent(file *regularFile, char *content, size_t content_len);
+char moveFile(char *res, char *dest, file *currentDirectory);
+char printFileInfo(FILE* fout, record *recordsList);
+void addContent(file *regularFile, char *content, size_t content_len);
+file* newFile(file *parent, char *filename, char type, record *prevRecord);
+file* initFileSystem();
+
+
+
+
 #define DEFAULT_INCREASE 8
 
 

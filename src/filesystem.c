@@ -167,7 +167,7 @@ file* initFileSystem(){
     return home;
 }
 
-
+/*
 int main(){
     file *home = initFileSystem();
     file *profile = newFile(home, "profile", '-',lastRecord(home));
@@ -185,3 +185,4 @@ int main(){
     printFileInfo(stdout, listDirectoryContent(buf));
     return 0;
 }
+ */
