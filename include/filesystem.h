@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <malloc.h>
+#include <string.h>
 
 extern int maxInode = 0;
 
