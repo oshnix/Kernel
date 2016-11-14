@@ -2,13 +2,21 @@
 #include "errors.h"
 
 
-void addFile(file *parent, file *child){
+void addFile(file *parent, file *child, record* previous){
     if(parent->actualSize == parent->usedSize){
         parent->actualSize += DEFAULT_INCREASE;
         parent->content = realloc(parent->content, parent->actualSize * sizeof(record));
     }
-    *((file**)(parent->content + sizeof(void*)*parent->usedSize)) = child;
-    printf("Add new: %p %p\n", parent, child);
+    record *temp = malloc(sizeof(record));
+    temp->previous = previous;
+    temp->current = child;
+    temp->next = NULL;
+    record **current = (record**)(parent->content + sizeof(record)*parent->usedSize);
+    *current = temp;
+    if(previous != NULL){
+        previous->next = temp;
+    }
+    printf("Add new: %d %p\n", parent->usedSize, (record*)(parent->content + parent->usedSize * sizeof(record)));
     ++parent->usedSize;
 }
 
@@ -18,19 +26,23 @@ void reWriteContent(file *regularFile, char *content, size_t content_len){
     regularFile->actualSize = regularFile->usedSize = content_len;
 }
 
-file** listDirectoryContent(file *directory, int *size){
+record** listDirectoryContent(file *directory){
     if(directory->type != 'd'){
         return IS_NOT_A_DIRECTORY;
     }
     else{
-        *size = directory->usedSize;
-        return (file**)directory->content;
+        return *(record**)directory->content;
     }
 }
 
-char printFileInfo(FILE* fout, file* fileToPrint){
-    fprintf(fout, "%s: %d %c %d\n", fileToPrint->name, fileToPrint->inode, fileToPrint->type, fileToPrint->usedSize);
-
+char printFileInfo(FILE* fout, record *recordsList){
+    printf("Files in directory: %s\n", recordsList[0].current->name);
+    do{
+        fflush(stdout);
+        fprintf(fout, "%s: %d %c %d\n", recordsList->current->name, recordsList->current->inode, recordsList->current->type, recordsList->current->usedSize);
+        recordsList = recordsList->next;
+    }while(recordsList != NULL);
+    //
 }
 
 void addContent(file *regularFile, char *content, size_t content_len){
@@ -40,7 +52,7 @@ void addContent(file *regularFile, char *content, size_t content_len){
 }
 
 
-file* newFile(file *parent, char *filename, char type, file* prevFile){
+file* newFile(file *parent, char *filename, char type, record *prevRecord){
     file *newFile = malloc(sizeof(file));
     if(parent == NULL){
         parent = newFile;
@@ -53,13 +65,13 @@ file* newFile(file *parent, char *filename, char type, file* prevFile){
     newFile->actualSize = 0;
     newFile->usedSize = 0;
     newFile->content = NULL;
-    addFile(parent, newFile);
+    addFile(parent, newFile, prevRecord);
     return newFile;
 }
 
 
 file* initFileSystem(){
-    file *home = newFile(NULL, "home", 'd');
+    file *home = newFile(NULL, "home", 'd', NULL);
     home->parent = home;
     return home;
 }
@@ -67,18 +79,12 @@ file* initFileSystem(){
 
 int main(){
     file *home = initFileSystem();
-    file *profile = newFile(home, "profile", '-');
+    file *profile = newFile(home, "profile", '-', *(record**)(home->content + (home->usedSize - 1) * sizeof(record)));
     char hello[] = "Hello, world!";
     char moreHel[] ="\nHalLo";
-    file *prof = *(file**)(home->content + sizeof(void*));
     reWriteContent(profile, hello, sizeof(hello));
     addContent(profile, moreHel, sizeof(moreHel));
-    int count;
-    file **fileList = listDirectoryContent(home, &count);
-    printf("Files in directory: %s\n", fileList[0]->name);
-    for(int i = 0; i < count; i++){
-        printFileInfo(stdout, fileList[i]);
-        fflush(stdout);
-    }
+    record *recordsList = listDirectoryContent(home);
+    printFileInfo(stdout, recordsList);
     return 0;
 }
