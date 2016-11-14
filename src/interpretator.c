@@ -36,7 +36,6 @@ char* strparse(char *dest, char *res){
         for (i = 0; i < count; i++) {
             if(*res == delims[i]){
                 state = 0;
-                ++res;
                 *dest = '\0';
                 break;
             }
@@ -194,9 +193,8 @@ char interpretateNextWord(interpretator_state *state) {
             }
             state->buffer = strparse(state->word, state->buffer);
             int firstOperand = readVarNum(state->word, &state->variables);
-            state->buffer = strparse(state->word, state->buffer);
             state->buffer = strparse(state->operand, state->buffer);
-            if (!state->operand == NULL) {
+            if (!(state->operand[0] == '\0' || state->operand[0] == '\n')) {
                 state->buffer = strparse(state->word, state->buffer);
                 int secondOperand = readVarNum(state->word, &state->variables);
                 return Operation(firstOperand, secondOperand, state->operand,

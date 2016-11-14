@@ -8,6 +8,7 @@
 
 
 int Operation(int first, int second, char *operand, int *result){
+    fflush(stdout);
     switch(operand[0]){
         case '+':
             *result =  first + second;
