@@ -30,7 +30,7 @@ typedef struct record{
     /*
      * next == NULL - последний файл в списке.
      */
-     file *current;
+     file  *current;
 }record;
 
 #define DEFAULT_INCREASE 8

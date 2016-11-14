@@ -26,7 +26,7 @@ void reWriteContent(file *regularFile, char *content, size_t content_len){
     regularFile->actualSize = regularFile->usedSize = content_len;
 }
 
-record** listDirectoryContent(file *directory){
+record* listDirectoryContent(file *directory){
     if(directory->type != 'd'){
         return IS_NOT_A_DIRECTORY;
     }
@@ -35,14 +35,55 @@ record** listDirectoryContent(file *directory){
     }
 }
 
+char removeFile(char *filename, file *currentDirectory){
+    record *recordList = listDirectoryContent(currentDirectory);
+    do{
+        if(strcmp(recordList->current->name,filename) == 0 ){
+            if(recordList->previous != NULL){
+                recordList->previous->next = recordList->next;
+                if(recordList->next != NULL){
+                    recordList->next->previous = recordList->previous;
+                }
+                free(recordList->current);
+                free(recordList);
+                return NO_PROBLEM_FOUND;
+            }
+            else{
+                return CANNOT_REMOVE_DIRECTORY;
+            }
+        }
+        recordList = recordList->next;
+    }while(recordList != NULL);
+    return FILE_NOT_FOUND;
+}
+
+file* navigate(char *filename, file *currentDirectory){
+    if(strcmp(".." , filename) == 0){
+        currentDirectory = currentDirectory->parent;
+        return currentDirectory;
+    }
+    record *recordList = listDirectoryContent(currentDirectory);
+    do{
+        if(strcmp(filename, recordList->current->name) == 0){
+            if(recordList->current->type == 'd'){
+                return recordList->current;
+            }
+            else{
+                return IS_NOT_A_DIRECTORY;
+            }
+        }
+        recordList = recordList->next;
+    }while(recordList != NULL);
+    return FILE_NOT_FOUND;
+
+}
+
 char printFileInfo(FILE* fout, record *recordsList){
     printf("Files in directory: %s\n", recordsList[0].current->name);
     do{
-        fflush(stdout);
-        fprintf(fout, "%s: %d %c %d\n", recordsList->current->name, recordsList->current->inode, recordsList->current->type, recordsList->current->usedSize);
+        fprintf(fout, "\t%s: %d %c %d\n", recordsList->current->name, recordsList->current->inode, recordsList->current->type, recordsList->current->usedSize);
         recordsList = recordsList->next;
     }while(recordsList != NULL);
-    //
 }
 
 void addContent(file *regularFile, char *content, size_t content_len){
@@ -51,12 +92,13 @@ void addContent(file *regularFile, char *content, size_t content_len){
     regularFile->actualSize = regularFile->usedSize = regularFile->actualSize + content_len;
 }
 
+record* lastRecord(file *directory){
+    return  *(record**)(directory->content + (directory->usedSize - 1) * sizeof(record));
+}
+
 
 file* newFile(file *parent, char *filename, char type, record *prevRecord){
     file *newFile = malloc(sizeof(file));
-    if(parent == NULL){
-        parent = newFile;
-    }
     newFile->parent = parent;
     newFile->inode = maxInode;
     ++maxInode;
@@ -65,7 +107,15 @@ file* newFile(file *parent, char *filename, char type, record *prevRecord){
     newFile->actualSize = 0;
     newFile->usedSize = 0;
     newFile->content = NULL;
-    addFile(parent, newFile, prevRecord);
+    if(parent != NULL){
+        addFile(parent, newFile, prevRecord);
+        if(type == 'd') addFile(newFile, newFile, NULL);
+        parent = newFile;
+    }
+    else{
+        addFile(newFile, newFile, NULL);
+    }
+
     return newFile;
 }
 
@@ -79,12 +129,15 @@ file* initFileSystem(){
 
 int main(){
     file *home = initFileSystem();
-    file *profile = newFile(home, "profile", '-', *(record**)(home->content + (home->usedSize - 1) * sizeof(record)));
+    file *profile = newFile(home, "profile", '-',lastRecord(home));
+    file *res = newFile(home, "res", 'd', lastRecord(home));
     char hello[] = "Hello, world!";
     char moreHel[] ="\nHalLo";
     reWriteContent(profile, hello, sizeof(hello));
     addContent(profile, moreHel, sizeof(moreHel));
     record *recordsList = listDirectoryContent(home);
     printFileInfo(stdout, recordsList);
+    file *buf = navigate("res", home);
+    printFileInfo(stdout, listDirectoryContent(buf));
     return 0;
 }

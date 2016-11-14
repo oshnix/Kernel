@@ -9,7 +9,9 @@ typedef enum{
 typedef enum {
     NO_PROBLEM_FOUND = 0,
     IS_NOT_A_DIRECTORY = -1,
-    IS_NOT_A_REGULAR_FILE
+    IS_NOT_A_REGULAR_FILE,
+    CANNOT_REMOVE_DIRECTORY,
+    FILE_NOT_FOUND
 }fileSystemErrors;
 
 
