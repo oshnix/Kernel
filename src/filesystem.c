@@ -2,6 +2,10 @@
 #include "errors.h"
 
 
+record* lastRecord(file *directory){
+    return  *(record**)(directory->content + (directory->usedSize - 1) * sizeof(record));
+}
+
 void addFile(file *parent, file *child, record* previous){
     if(parent->actualSize == parent->usedSize){
         parent->actualSize += DEFAULT_INCREASE;
@@ -35,17 +39,22 @@ record* listDirectoryContent(file *directory){
     }
 }
 
+
+void cutRecord(record *recordToDelete){
+    recordToDelete->previous->next = recordToDelete->next;
+    if(recordToDelete->next != NULL){
+        recordToDelete->next->previous = recordToDelete->previous;
+    }
+    free(recordToDelete);
+}
+
 char removeFile(char *filename, file *currentDirectory){
     record *recordList = listDirectoryContent(currentDirectory);
     do{
         if(strcmp(recordList->current->name,filename) == 0 ){
             if(recordList->previous != NULL){
-                recordList->previous->next = recordList->next;
-                if(recordList->next != NULL){
-                    recordList->next->previous = recordList->previous;
-                }
                 free(recordList->current);
-                free(recordList);
+                cutRecord(recordList);
                 return NO_PROBLEM_FOUND;
             }
             else{
@@ -75,6 +84,43 @@ file* navigate(char *filename, file *currentDirectory){
         recordList = recordList->next;
     }while(recordList != NULL);
     return FILE_NOT_FOUND;
+}
+
+char moveFile(char *res, char *dest, file *currentDirectory){
+    record *recordList = listDirectoryContent(currentDirectory);
+    char resIsSet = 0, destIsSet = 0;
+    record *res_file, *dest_file;
+    //file *res_file, *dest_file;
+    if(strcmp("..", dest) == 0){
+        destIsSet = 1;
+        dest_file->current = currentDirectory->parent;
+    }
+    do{
+        if(!resIsSet && strcmp(res, recordList->current->name) == 0){
+            resIsSet = 1;
+            res_file = recordList;
+        }
+        if(!destIsSet && strcmp(dest, recordList->current->name) == 0){
+            destIsSet = 1;
+            dest_file = recordList;
+        }
+        if(destIsSet && resIsSet){
+            break;
+        }
+        recordList = recordList->next;
+    }while(recordList != NULL);
+    if(dest_file->current->type == 'd' && dest_file != res_file && res_file->current != currentDirectory){
+        res_file->current->parent = dest_file;
+        addFile(dest_file->current, res_file->current, lastRecord(dest_file->current));
+        cutRecord(res_file);
+        return NO_PROBLEM_FOUND;
+
+    } else if(!resIsSet && !destIsSet){
+        return FILE_NOT_FOUND;
+    }
+    else{
+        return WRONG_ACTION;
+    }
 
 }
 
@@ -91,11 +137,6 @@ void addContent(file *regularFile, char *content, size_t content_len){
     strncpy((char*)(regularFile->content + regularFile->actualSize - 1), content, content_len);
     regularFile->actualSize = regularFile->usedSize = regularFile->actualSize + content_len;
 }
-
-record* lastRecord(file *directory){
-    return  *(record**)(directory->content + (directory->usedSize - 1) * sizeof(record));
-}
-
 
 file* newFile(file *parent, char *filename, char type, record *prevRecord){
     file *newFile = malloc(sizeof(file));
@@ -137,7 +178,10 @@ int main(){
     addContent(profile, moreHel, sizeof(moreHel));
     record *recordsList = listDirectoryContent(home);
     printFileInfo(stdout, recordsList);
+    moveFile("profile", "res", home);
     file *buf = navigate("res", home);
+    printFileInfo(stdout, listDirectoryContent(buf));
+    removeFile("profile", buf);
     printFileInfo(stdout, listDirectoryContent(buf));
     return 0;
 }
