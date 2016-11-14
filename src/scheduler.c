@@ -7,6 +7,7 @@
 #include <string.h>
 
 #include "interpretator.h"
+#include "syscalls.h"
 
 volatile sig_atomic_t scheduler_flag = false;
 interpretator_state* current_state;
@@ -19,9 +20,10 @@ void interrupt_handler(interpretator_state *state) {
 		return;
 	}
 	do {
-		proc_current = (proc_current + 1) % 255;
+		proc_current = (proc_current + 1) % 256;
 	} while(proc[proc_current].status == PROC_KILLED);
-	//printf("Switch to process with position %li!\n", proc_current);
+	if(proc_current == 0 && state->pid != 0)
+		printf("Switching from %li\n", state->pid);
 	scheduler_flag = false;
     current_state = &proc[proc_current];
 }

@@ -54,6 +54,7 @@ void syscalls_kill_verbose(int pid) {
 }
 
 int syscalls_kill(int pid) {
+	printf("Removing process %i\n", pid);
 	if(proc[pid].status == PROC_KILLED) {
 		return 1;
 	}

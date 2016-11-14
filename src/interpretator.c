@@ -4,6 +4,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/poll.h>
+#include <stdbool.h>
 #include "scheduler.h"
 #include "errors.h"
 #include "operators.h"
@@ -154,6 +155,7 @@ char nonSyscalls(interpretator_state *state){
 char interpretateNextWord(interpretator_state *state) {
     int variableIndex;
     char errorCode;
+    //printf("Working with: %s\n", state->buffer);
     if (state->pid == -1 || -1 == (errorCode = nonSyscalls(state))) {
         if (strcmp(state->word, "print") == 0) {
             state->buffer = strparse(state->word, state->buffer);
@@ -168,19 +170,21 @@ char interpretateNextWord(interpretator_state *state) {
         } else if (strcmp(state->word, "end") == 0) {
 			syscalls_kill(state->pid);
             printf("Process %s exits\n", state->name);
-            return 0;
+            return 2;
 
         } else if (strcmp(state->word, "read") == 0) {
-
+			return ALL_OK;
         } else if (strcmp(state->word, "write") == 0) {
-
+			return ALL_OK;
         } else if (strcmp(state->word, "jobs") == 0) {
 			syscalls_jobs();
+			return ALL_OK;
         } else if (strcmp(state->word, "cd") == 0) {
-
+			return ALL_OK;
         } else if (strcmp(state->word, "exec") == 0) {
 			state->buffer = strparse(state->word, state->buffer);
 			syscalls_exec(state->word);
+			return ALL_OK;
         } else {
             int variableIndex = isVariable(state->word, &state->variables);
             if (variableIndex == -1) variableIndex = addNewElement(state->word, &state->variables);
@@ -224,7 +228,7 @@ void fillLabels(FILE *fin, char *buffer, char *word, essence *labels){
         int position = ftell(fin);
         getline(&buffer, &len, fin);
         buffer = strparse(word, buffer);
-        printf("%s %s\n", buffer, word);
+        //printf("%s %s\n", buffer, word);
         if(word[strlen(word) - 1] == ':'){
             addLabel(labels, word, position, fin);
         }
@@ -238,22 +242,23 @@ char executeNextCommand(interpretator_state *state) {
     char *buffer;
     size_t len = 0;
     int fd_ret;
-	if(state->program == stdin) {
+	if(state->pid == 0) {
 		fd_ret = poll(state->fds, 2, 5 * 1000);
 		if(!(state->fds[0].revents & POLLIN)) {
 			state->status = PROC_BLOCKING_IO;
-			syscalls_yield();
-			return 1;
+			return 2;
+		} else {
+			printf("sh > ");
+			fflush(stdout);
+			fflush(stdin);
 		}
 	}
+	state->status = PROC_RUNNING;
     getline(&buffer, &len, state->program);
     state->buffer = buffer;
     state->position = ftell(state->program);
     state->buffer = strparse(state->word, state->buffer);
-    //printf("Word: %s\n", word);
     char ret = interpretateNextWord(state);
-    //free(buffer);
-    //printf("Error code: %i\n", (int)ret);
     free(buffer);
     return ret;
 }
@@ -292,9 +297,12 @@ int launchInterpretator(interpretator_state *state) {
 	char errorCode;
 	if(state->status == PROC_KILLED) {
 		syscalls_yield(state);
+		printf("switch to dead process\n");
 		return 0;
 	}
     while(errorCode = executeNextCommand(state)) {
+		if(errorCode == 2)
+			scheduler_flag = true;
 		if(scheduler_flag) {
 			interrupt_handler(state);
 			return errorCode;
