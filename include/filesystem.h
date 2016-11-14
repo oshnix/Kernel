@@ -1,6 +1,12 @@
-
 #ifndef SIMPLEBASIC_FILESYSTEM_H
 #define SIMPLEBASIC_FILESYSTEM_H
+
+#include <stddef.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <malloc.h>
+
+extern int maxInode = 0;
 
 #pragma pack(push, 2)
 typedef struct file{

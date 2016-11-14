@@ -2,24 +2,35 @@
 
 void addFile(file *parent, file *child){
     if(parent->actualSize == parent->usedSize){
-        parent->actualSize += DEFAULT_INCREASE * sizeof(file);
-        parent->content = realloc(parent->content, parent->actualSize);
+        parent->actualSize += DEFAULT_INCREASE;
+        parent->content = realloc(parent->content, parent->actualSize * sizeof(file));
     }
-    parent->content[parent->usedSize] = child;
-    parent->usedSize += sizeof(void*);
+    *((file**)(parent->content + parent->usedSize)) = child;
+    ++parent->usedSize;
 }
 
 
-file newFile(file *parent, char *dirname, int newInode, char type){
-    file directory = {parent, newInode, dirname, type, 0, 0, NULL};
+file newFile(file *parent, char *filename, char type){
+    file newFile = {parent, maxInode, filename, type, 0, 0, NULL};
+    ++maxInode;
     if(parent != NULL){
-        addFile(parent, &directory);
+        addFile(parent, &newFile);
     }
-    return directory;
+    return newFile;
 }
 
 
-void initFileSystem(){
-    file home = addFile(NULL, "home", 0, 'd');
+file initFileSystem(){
+    file home = newFile(NULL, "home", 'd');
     home.parent = &home;
+    return home;
+}
+
+
+int main(){
+    file home = initFileSystem();
+    file profile = newFile(&home, "profile", '-');
+    file *prof = *(file**)home.content;
+    printf("%p %d %d %d\n",prof->parent, prof->inode, prof->actualSize, prof->usedSize);
+    return 0;
 }
