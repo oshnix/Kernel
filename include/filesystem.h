@@ -1,7 +1,6 @@
 #ifndef _FILESYSTEM_H_
 #define _FILESYSTEM_H_
 
-extern int maximumInode = 0;
 
 #pragma pack(push, 2)
 typedef struct file{
@@ -9,11 +8,11 @@ typedef struct file{
     int inode;
     char *name;
     char type;
-    size_t actualSize;
-    size_t usedSize;
+    size_t fileSize;
     void *content;
 }file;
 #pragma pack(pop)
+
 
 typedef struct record{
     struct record *previous;
@@ -27,7 +26,7 @@ typedef struct record{
      file  *current;
 }record;
 
-
+record* lastRecord(file *directory);
 void addFile(file *parent, file *child, record* previous);
 record* listDirectoryContent(file *directory);
 void cutRecord(record *recordToDelete);
@@ -38,6 +37,7 @@ char moveFile(char *res, char *dest, file *currentDirectory);
 char printFileInfo(FILE* fout, record *recordsList);
 void addContent(file *regularFile, char *content, size_t content_len);
 file* newFile(file *parent, char *filename, char type, record *prevRecord);
+file* find(char *filename, file *currentDirectory);
 file* initFileSystem();
 
 #define DEFAULT_INCREASE 8

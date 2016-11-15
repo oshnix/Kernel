@@ -2,6 +2,7 @@
 #define _INTERPRETATOR_H_
 
 #include <unistd.h>
+#include "filesystem.h"
 #include <sys/poll.h>
 
 #define START_ESSENCE_SIZE 8
@@ -20,11 +21,12 @@ typedef enum {
 	PROC_RUNNING,
 	PROC_STOPPED,
 	PROC_BLOCKING_IO,
-	PROC_KILLED
+	PROC_KILLED,
+    PROC_INCORRECT
 } proc_status;
 
 typedef struct {
-	FILE* program;
+	file* program;
 	char *buffer;
 	char *word;
 	char *operand;

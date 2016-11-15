@@ -46,10 +46,9 @@ char* strparse(char *dest, char *res){
 }
 
 
-FILE* initProc(char* filename){
-    FILE *fin;
-    fin = fopen(filename, "r");
-    return fin;
+file* initProc(char* filename, file *workDirectory){
+    file *current = find(filename, workDirectory);
+    return current;
 }
 
 int comparations(int first, int second, char *operand, char *result){
@@ -110,10 +109,6 @@ void addLabel(essence *labels, char *word, int position, FILE *fin){
     labels->essenceValues[label] = position;
     fseek(fin, position, SEEK_SET);
 }
-
-
-
-
 
 char nonSyscalls(interpretator_state *state){
     if(!strcmp(state->word, "if")) {
@@ -245,11 +240,27 @@ char goToLabel(interpretator_state *state){
     return ALL_OK;
 }
 
-void fillLabels(FILE *fin, char *buffer, char *word, essence *labels){
+char* getline_file(file* program, int *position) {
+    int i = *position;
+    int size;
+    char* content = (char*)program->content;
+    while(content[i] != '\n' && content[i] != 0) {
+        i++;
+    }
+    size = i - *position;
+    char* result = (char*)malloc(size*sizeof(char));
+    strncpy(result, content + *position, size);
+    *position += size + 1;
+    return result;
+}
+
+
+void fillLabels(file *fin, char *buffer, char *word, essence *labels){
     size_t len = 0;
     while(1){
-        int position = ftell(fin);
-        getline(&buffer, &len, fin);
+        int position = 0;
+        //getline(&buffer, &len, fin);
+        buffer = getline_file(fin, &position);
         buffer = strparse(word, buffer);
         //printf("%s %s\n", buffer, word);
         if(word[strlen(word) - 1] == ':'){
@@ -265,17 +276,22 @@ char executeNextCommand(interpretator_state *state) {
     char *buffer;
     size_t len = 0;
     int fd_ret;
+    //printf("ExecNext %i\n", state->pid);
 	if(state->pid == 0) {
-		fd_ret = poll(state->fds, 2, 5 * 1000);
-		if(!(state->fds[0].revents & POLLIN) || proc_foreground != state->pid) {
-			state->status = PROC_BLOCKING_IO;
-			return 2;
-		}
-	}
-	state->status = PROC_RUNNING;
-    getline(&buffer, &len, state->program);
+        fd_ret = poll(state->fds, 2, 5 * 1000);
+        if (!(state->fds[0].revents & POLLIN) || proc_foreground != state->pid) {
+            state->status = PROC_BLOCKING_IO;
+            return 2;
+        }
+        state->status = PROC_RUNNING;
+        getline(&buffer, &len, stdin);
+        state->position = ftell(stdin);
+    } else{
+        printf("Time to read!\n");
+        buffer = getline_file(state->program, &state->position);
+    }
     state->buffer = buffer;
-    state->position = ftell(state->program);
+    //printf("Get: %s", state->buffer);
     state->buffer = strparse(state->word, state->buffer);
     char ret = interpretateNextWord(state);
     if(state->pid == 0 && proc_foreground == state->pid) {
@@ -289,23 +305,26 @@ char executeNextCommand(interpretator_state *state) {
 
 interpretator_state initInterpretator(char* file, int pid) {
 	interpretator_state state;
-	state.program = initProc(file);
     if(pid == 0) {
-        state.program = stdin;
-    } else if (!state.program) {
-		return state;
-	}
+        state.program = NULL;
+    } else {
+        state.program = initProc(file, workingDirectory);
+        if (!state.program) {
+            state.status = PROC_INCORRECT;
+            return state;
+        }
+    }
     state.buffer = malloc(256);
     state.operand = malloc(OPERAND_MAX_SIZE);
     state.word = malloc(ESSENCE_NAME_SIZE + 2);
     state.variables = essenceInit();
     state.labels = essenceInit();
-    state.position = ftell(state.program);
+    state.position = 0;
     
     state.pid = pid;
     state.status = PROC_RUNNING;
     state.name = (char*)malloc(255);
-    if(state.program == stdin) {
+    if(state.program == NULL) {
 		strcpy(state.name, "stdin");
 		state.fds[0].fd = STDIN_FILENO;
 		state.fds[0].events = POLLIN;
@@ -313,8 +332,8 @@ interpretator_state initInterpretator(char* file, int pid) {
 		state.fds[1].events = POLLOUT;
 	} else {
 		strcpy(state.name, file);
-		fillLabels(state.program, state.buffer, state.word, &state.labels);
-		rewind(state.program);
+		//fillLabels(state.program, state.buffer, state.word, &state.labels);
+		state.position = 0;
 	}
     return state;
 }

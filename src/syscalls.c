@@ -35,7 +35,7 @@ void syscalls_jobs() {
 	}
 }
 
-void syscall_ls(){
+void syscalls_lstat(){
 	printFileInfo(stdout, listDirectoryContent(workingDirectory));
 }
 
@@ -47,12 +47,16 @@ void syscalls_exec(char* name) {
 			break;
 		}
 	}
+    printf("Syscall exec pid: %i\n", pid);
 	proc[pid] = initInterpretator(name, pid);
-	if(!proc[pid].program) {
-		syscalls_kill(pid);
+
+	if(proc[pid].status == PROC_INCORRECT) {
+		//syscalls_kill(pid);
+		proc[pid].status = PROC_INCORRECT;
 		printf("sh: file %s not exists\n", name);
+	} else {
+		proc_count++;
 	}
-	proc_count++;
 }
 
 void syscalls_yield(interpretator_state* state) {

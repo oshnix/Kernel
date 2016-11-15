@@ -19,6 +19,8 @@ size_t proc_count = 0;
 size_t proc_current = 0;
 size_t proc_foreground = 0;
 
+file *workingDirectory;
+
 void interrupt_handler(interpretator_state *state) {
 	if(scheduler_flag) {
 		do {
@@ -37,7 +39,7 @@ void interrupt_handler(interpretator_state *state) {
 	if(stop_flag) {
 		stop_flag = false;
 		proc[proc_foreground].status = PROC_STOPPED;
-		printf("[%i] Stopped\n", proc_foreground);
+		printf("[%li] Stopped\n", proc_foreground);
 		printf("sh > ");
 		fflush(stdout);
 		proc_foreground = 0;
@@ -74,15 +76,20 @@ int main() {
 	timer.it_interval.tv_sec = 0;
 	timer.it_interval.tv_usec = 250000;
 	workingDirectory = initFileSystem();
+	char inputBody[] = "jobs\nend";
+	file *input = newFile(workingDirectory, "input", '-', lastRecord(workingDirectory));
+	addContent(input, inputBody, sizeof(inputBody));
 	
 	for(size_t i = 0; i < 256; i++) {
 		proc[i].status = PROC_KILLED;
 	}
 	
 	syscalls_exec(NULL);
-	
 	current_state = &proc[0];
-	
+
+
+
+
 	printf("sh > ");
 	fflush(stdout);
 	setitimer (ITIMER_PROF, &timer, NULL);
