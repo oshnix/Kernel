@@ -18,28 +18,28 @@ typedef struct record{
      file  *current;
 }record;
 
-
-
-record* lastRecord(record *currentRecord);
-//принимает указатель на запись в директории и ищет последнюю
 void add_simple_record(record *previous, file *child);
-//добавляет новую запись к концу списка
-void add_catatlog_record(record *parent_directory_record, file *new_directory);
-//
-char listDirectoryContent(file *directory);
-//если файл является директорией, то возвращает запись, которая указывает на саму эту директорию
-void cutRecord(record *recordToDelete);
-//вырезает запись из списка
-char removeFile(char *filename, file *currentDirectory);
-//удаляет запись о файле и его содержимое
-file* navigate(char *filename, file *currentDirectory);
-//возвращает файл, если в текущей директории был найден файл с таким названием.
-void reWriteContent(file *regularFile, char *content, size_t content_len);
-char moveFile(char *res, char *dest, file *currentDirectory);
-void addContent(file *regularFile, char *content, size_t content_len);
-file* newFile(record *currentCatalogRecord, char *filename, char type);
-file* find(char *filename, file *currentDirectory);
-file* initFileSystem();
 
+void add_catatlog_record(record *parent_directory_record, file *new_directory);
+
+file* new_file(record *currentCatalogRecord, char *filename, char type);
+
+void rewrite_file(file *regularFile, char *content, size_t content_len);
+
+char list_directory_content(file *directory, FILE *fout);
+
+void cut_record(record *record_to_delete);
+
+char remove_file(char *filename, file *current_directory);
+
+file* navigate(char *filename, file *current_directory);
+
+file* find(char *filename, file *current_directory);
+
+char move_file(char *res, char *dest, file *current_directory);
+
+void add_content(file *regularFile, char *content, size_t content_len);
+
+file* init_file_system();
 
 #endif
