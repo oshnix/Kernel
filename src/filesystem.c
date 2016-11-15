@@ -12,7 +12,6 @@ record* lastRecord(record *currentRecord) {
     while (currentRecord->next != NULL) {
         currentRecord = currentRecord->next;
     }
-    printf("%p\n", currentRecord);
     return currentRecord;
 }
 
@@ -102,29 +101,24 @@ file* navigate(char *filename, file *currentDirectory){
 }
 
 file* find(char *filename, file *currentDirectory){
-    printf("INPUT\n");
     if(strcmp(".." , filename) == 0){
         record *temp = *((record**)(currentDirectory->content));
         return temp->previous->current;
     }
-    printf("INPUT  %p\n", currentDirectory);
     record *recordList = listDirectoryContent(currentDirectory);
     while(recordList != NULL){
-        printf("HERE: \n");
         if(strcmp(filename, recordList->current->name) == 0){
             return recordList->current;
         }
         recordList = recordList->next;
     }
-    printf("Not OK\n");
     return FILE_NOT_FOUND;
 }
-/*
+
 char moveFile(char *res, char *dest, file *currentDirectory){
     record *recordList = listDirectoryContent(currentDirectory);
     char resIsSet = 0, destIsSet = 0;
     record *res_file, *dest_file;
-    //file *res_file, *dest_file;
     if(strcmp("..", dest) == 0){
         destIsSet = 1;
         record *temp = *(record**)(currentDirectory->content);
@@ -145,8 +139,7 @@ char moveFile(char *res, char *dest, file *currentDirectory){
         recordList = recordList->next;
     }while(recordList != NULL);
     if(dest_file->current->type == 'd' && dest_file != res_file && res_file->current != currentDirectory){
-        res_file->current->parent = dest_file;
-        addFile(dest_file->current, res_file->current, lastRecord(dest_file->current));
+        addFile(lastRecord(*(record**)dest_file->current->content), res_file->current);
         cutRecord(res_file);
         return NO_PROBLEM_FOUND;
 
@@ -158,7 +151,6 @@ char moveFile(char *res, char *dest, file *currentDirectory){
     }
 
 }
- */
 
 char printFileInfo(FILE* fout, record *recordsList){
     printf("Files in directory: %s\n", recordsList[0].current->name);
@@ -183,24 +175,18 @@ file* initFileSystem(){
 
 int main(){
     file *home = initFileSystem();
-    printf("Content added: \n");
     file *profile = newFile(*(record**)home->content, "profile", '-');
-    printf("Content added: \n");
     file *res = newFile(*(record**)home->content, "res", 'd');
-    printf("Content added: \n");
-    fflush(stdout);
-    /*
-    char input[] = "Hello, world!";
+    char hello[] = "Hello, world!";
     char moreHel[] ="\nHalLo";
     reWriteContent(profile, hello, sizeof(hello));
     addContent(profile, moreHel, sizeof(moreHel));
     record *recordsList = listDirectoryContent(home);
     printFileInfo(stdout, recordsList);
-    //moveFile("profile", "res", home);
+    moveFile("profile", "res", home);
     file *buf = navigate("res", home);
     printFileInfo(stdout, listDirectoryContent(buf));
     removeFile("profile", buf);
     printFileInfo(stdout, listDirectoryContent(buf));
-     */
     return 0;
 }
