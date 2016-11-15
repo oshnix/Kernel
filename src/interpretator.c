@@ -199,6 +199,18 @@ char interpretateNextWord(interpretator_state *state) {
 			syscalls_kill_verbose(pid);
 			return ALL_OK;
         } else if (strcmp(state->word, "cd") == 0) {
+			state->buffer = strparse(state->word, state->buffer);
+			file* new_dir;
+			if(find_record(state->word, state->working_directory, &new_file) == NO_PROBLEM_FOUND) {
+				if(new_dir->type == 'd') {
+					free(state->working_directory);
+					state->working_directory = new_dir;
+				} else {
+					printf("%s is not a directory\n", state->word);
+				}
+			} else {
+				printf("No such directory\n");
+			}
 			return ALL_OK;
         } else if (strcmp(state->word, "mkdir") == 0) {
 			state->buffer = strparse(state->word, state->buffer);
@@ -206,7 +218,6 @@ char interpretateNextWord(interpretator_state *state) {
 			return ALL_OK;
         } else if (strcmp(state->word, "touch") == 0) {
 			state->buffer = strparse(state->word, state->buffer);
-			printf("Found word: %s\n", state->word);
 			new_file(*(record**)state->working_directory->content, state->word, '-', strlen(state->word));
 			return ALL_OK;
         } else if (strcmp(state->word, "exec") == 0) {
