@@ -200,11 +200,11 @@ char interpretateNextWord(interpretator_state *state) {
 			return ALL_OK;
         } else if (strcmp(state->word, "cd") == 0) {
 			state->buffer = strparse(state->word, state->buffer);
-			file* new_dir;
-			if(find_record(state->word, state->working_directory, &new_file) == NO_PROBLEM_FOUND) {
-				if(new_dir->type == 'd') {
+			record* new_dir;
+			if(find_record(state->word, state->working_directory, &new_dir) == NO_PROBLEM_FOUND) {
+				if(new_dir->current->type == 'd') {
 					free(state->working_directory);
-					state->working_directory = new_dir;
+					state->working_directory = new_dir->current;
 				} else {
 					printf("%s is not a directory\n", state->word);
 				}
