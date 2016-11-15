@@ -75,7 +75,7 @@ int main() {
 	timer.it_interval.tv_usec = 250000;
 	file* home = init_file_system();
 	char inputBody[] = "jobs\nend";
-	file *input = new_file(*(record**)home->content, "input", '-');
+	file *input = new_file(*(record**)home->content, "input", '-', sizeof("input"));
 	add_content(input, inputBody, sizeof(inputBody));
 	
 	for(size_t i = 0; i < 256; i++) {

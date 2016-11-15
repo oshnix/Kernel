@@ -202,12 +202,12 @@ char interpretateNextWord(interpretator_state *state) {
 			return ALL_OK;
         } else if (strcmp(state->word, "mkdir") == 0) {
 			state->buffer = strparse(state->word, state->buffer);
-			new_file(*(record**)state->working_directory->content, state->word, 'd');
+			new_file(*(record**)state->working_directory->content, state->word, 'd', ESSENCE_NAME_SIZE + 2);
 			return ALL_OK;
         } else if (strcmp(state->word, "touch") == 0) {
 			state->buffer = strparse(state->word, state->buffer);
 			printf("Found word: %s\n", state->word);
-			new_file(*(record**)state->working_directory->content, state->word, '-');
+			new_file(*(record**)state->working_directory->content, state->word, '-', ESSENCE_NAME_SIZE + 2);
 			return ALL_OK;
         } else if (strcmp(state->word, "exec") == 0) {
 			state->buffer = strparse(state->word, state->buffer);
