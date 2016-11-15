@@ -68,7 +68,8 @@ char list_directory_content(file *directory, FILE *fout){
         record *records_list = *(record**)directory->content;
         printf("Files in directory: %s\n", records_list[0].current->name);
         do{
-            fprintf(fout, "\t%s: %d %c %d\n", records_list->current->name, records_list->current->inode, records_list->current->type, records_list->current->fileSize);
+            //fprintf(fout, "\t%s: %d %c %d\n", records_list->current->name, records_list->current->inode, records_list->current->type, records_list->current->fileSize);
+            fprintf(fout, "%c %i %s\n", records_list->current->type, records_list->current->fileSize, records_list->current->name);
             records_list = records_list->next;
         }while(records_list != NULL);
         return NO_PROBLEM_FOUND;

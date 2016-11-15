@@ -35,8 +35,8 @@ void syscalls_jobs() {
 	}
 }
 
-void syscalls_lstat(){
-	//list_directory_content(workingDirectory, stdout);
+void syscalls_lstat(file* working_directory){
+	list_directory_content(working_directory, stdout);
 }
 
 void syscalls_exec(char* name, file* working_directory) {
@@ -47,7 +47,6 @@ void syscalls_exec(char* name, file* working_directory) {
 			break;
 		}
 	}
-    printf("Syscall exec pid: %i\n", pid);
 	proc[pid] = initInterpretator(name, pid, working_directory);
 
 	if(proc[pid].status == PROC_INCORRECT) {

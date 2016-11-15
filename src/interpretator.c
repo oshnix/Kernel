@@ -189,7 +189,7 @@ char interpretateNextWord(interpretator_state *state) {
 			syscalls_jobs();
 			return ALL_OK;
         } else if (strcmp(state->word, "ls") == 0) {
-            syscalls_jobs();
+            syscalls_lstat(state->working_directory);
             return ALL_OK;
         }else if (strcmp(state->word, "kill") == 0) {
 			long pid = -1;
@@ -199,6 +199,15 @@ char interpretateNextWord(interpretator_state *state) {
 			syscalls_kill_verbose(pid);
 			return ALL_OK;
         } else if (strcmp(state->word, "cd") == 0) {
+			return ALL_OK;
+        } else if (strcmp(state->word, "mkdir") == 0) {
+			state->buffer = strparse(state->word, state->buffer);
+			new_file(*(record**)state->working_directory->content, state->word, 'd');
+			return ALL_OK;
+        } else if (strcmp(state->word, "touch") == 0) {
+			state->buffer = strparse(state->word, state->buffer);
+			printf("Found word: %s\n", state->word);
+			new_file(*(record**)state->working_directory->content, state->word, '-');
 			return ALL_OK;
         } else if (strcmp(state->word, "exec") == 0) {
 			state->buffer = strparse(state->word, state->buffer);
