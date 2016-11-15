@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <sys/time.h>
 #include <string.h>
-
+#include "filesystem.h"
 #include "interpretator.h"
 #include "syscalls.h"
 
@@ -73,6 +73,7 @@ int main() {
 	/* ... and every 250 msec after that. */
 	timer.it_interval.tv_sec = 0;
 	timer.it_interval.tv_usec = 250000;
+	workingDirectory = initFileSystem();
 	
 	for(size_t i = 0; i < 256; i++) {
 		proc[i].status = PROC_KILLED;

@@ -1,13 +1,7 @@
-#ifndef SIMPLEBASIC_FILESYSTEM_H
-#define SIMPLEBASIC_FILESYSTEM_H
+#ifndef _FILESYSTEM_H_
+#define _FILESYSTEM_H_
 
-#include <stddef.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <malloc.h>
-#include <string.h>
-
-extern int maxInode = 0;
+extern int maximumInode = 0;
 
 #pragma pack(push, 2)
 typedef struct file{
@@ -46,10 +40,9 @@ void addContent(file *regularFile, char *content, size_t content_len);
 file* newFile(file *parent, char *filename, char type, record *prevRecord);
 file* initFileSystem();
 
-
-
-
 #define DEFAULT_INCREASE 8
+
+extern file *workingDirectory;
 
 
 #endif

@@ -193,7 +193,10 @@ char interpretateNextWord(interpretator_state *state) {
         } else if (strcmp(state->word, "jobs") == 0) {
 			syscalls_jobs();
 			return ALL_OK;
-        } else if (strcmp(state->word, "kill") == 0) {
+        } else if (strcmp(state->word, "ls") == 0) {
+            syscalls_jobs();
+            return ALL_OK;
+        }else if (strcmp(state->word, "kill") == 0) {
 			long pid = -1;
 			char* endptr;
 			state->buffer = strparse(state->word, state->buffer);

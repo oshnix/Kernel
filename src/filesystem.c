@@ -1,3 +1,9 @@
+#include <stddef.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <malloc.h>
+#include <string.h>
+
 #include "filesystem.h"
 #include "errors.h"
 
@@ -20,7 +26,6 @@ void addFile(file *parent, file *child, record* previous){
     if(previous != NULL){
         previous->next = temp;
     }
-    printf("Add new: %d %p\n", parent->usedSize, (record*)(parent->content + parent->usedSize * sizeof(record)));
     ++parent->usedSize;
 }
 
@@ -141,8 +146,8 @@ void addContent(file *regularFile, char *content, size_t content_len){
 file* newFile(file *parent, char *filename, char type, record *prevRecord){
     file *newFile = malloc(sizeof(file));
     newFile->parent = parent;
-    newFile->inode = maxInode;
-    ++maxInode;
+    newFile->inode = maximumInode;
+    ++maximumInode;
     newFile->name = filename;
     newFile->type = type;
     newFile->actualSize = 0;

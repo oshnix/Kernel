@@ -2,6 +2,7 @@
 #include <stdbool.h>
 #include "syscalls.h"
 #include <stdlib.h>
+#include "filesystem.h"
 #include "interpretator.h"
 
 extern size_t proc_count;
@@ -32,6 +33,10 @@ void syscalls_jobs() {
 		}
 		printf("%s\n", proc[i].name);
 	}
+}
+
+void syscall_ls(){
+	printFileInfo(stdout, listDirectoryContent(workingDirectory));
 }
 
 void syscalls_exec(char* name) {
