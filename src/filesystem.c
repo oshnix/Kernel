@@ -35,11 +35,15 @@ void add_catatlog_record(record *parent_directory_record, file *new_directory){
     ++new_directory_record->current->fileSize;
 }//approved
 
-file* new_file(record *currentCatalogRecord, char *filename, char type){
+file* new_file(record *currentCatalogRecord, char *filename, char type, size_t filename_length ){
+    if(currentCatalogRecord){
+        printf("%s %s\n",currentCatalogRecord->current->name, filename);
+    }
     file *newFile = malloc(sizeof(file));
     newFile->inode = maximumInode;
     ++maximumInode;
-    newFile->name = filename;
+    newFile->name = malloc(sizeof(char) *(filename_length+1));
+    strncpy(newFile->name, filename, filename_length);
     newFile->type = type;
     newFile->fileSize = 0;
     newFile->content = NULL;
@@ -171,6 +175,6 @@ void add_content(file *regular_file, char *content, size_t content_len){
 
 
 file* init_file_system(){
-    file *home = new_file(NULL, "/", 'd');
+    file *home = new_file(NULL, "/", 'd', 1);
     return home;
 }

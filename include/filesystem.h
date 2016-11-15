@@ -22,7 +22,7 @@ void add_simple_record(record *previous, file *child);
 
 void add_catatlog_record(record *parent_directory_record, file *new_directory);
 
-file* new_file(record *currentCatalogRecord, char *filename, char type);
+file* new_file(record *currentCatalogRecord, char *filename, char type, size_t filename_length );
 
 void rewrite_file(file *regularFile, char *content, size_t content_len);
 
