@@ -203,7 +203,7 @@ char interpretateNextWord(interpretator_state *state) {
 			record* new_dir;
 			if(find_record(state->word, state->working_directory, &new_dir) == NO_PROBLEM_FOUND) {
 				if(new_dir->current->type == 'd') {
-					free(state->working_directory);
+					//free(state->working_directory);
 					state->working_directory = new_dir->current;
 				} else {
 					printf("%s is not a directory\n", state->word);
@@ -214,11 +214,11 @@ char interpretateNextWord(interpretator_state *state) {
 			return ALL_OK;
         } else if (strcmp(state->word, "mkdir") == 0) {
 			state->buffer = strparse(state->word, state->buffer);
-			new_file(*(record**)state->working_directory->content, state->word, 'd', strlen(state->word));
+			new_file(*(record**)(state->working_directory->content), state->word, 'd', strlen(state->word));
 			return ALL_OK;
         } else if (strcmp(state->word, "touch") == 0) {
 			state->buffer = strparse(state->word, state->buffer);
-			new_file(*(record**)state->working_directory->content, state->word, '-', strlen(state->word));
+			new_file(*(record**)(state->working_directory->content), state->word, '-', strlen(state->word));
 			return ALL_OK;
         } else if (strcmp(state->word, "exec") == 0) {
 			state->buffer = strparse(state->word, state->buffer);

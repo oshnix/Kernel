@@ -136,7 +136,7 @@ char find_record(char *filename, file *current_directory, record **record_pointe
         if(current_directory->type != 'd'){
             return IS_NOT_A_DIRECTORY;
         }
-        *record_pointer = *(record**)current_directory->content;
+        *record_pointer = *(record**)(current_directory->content);
         if(strcmp(word, "..") == 0){
             current_directory = (*record_pointer)->previous->current;
             if(*filename) ++filename;
@@ -152,6 +152,7 @@ char find_record(char *filename, file *current_directory, record **record_pointe
         if(*filename) ++filename;
         current_directory = (*record_pointer)->current;
     }
+    *record_pointer = *(record**)(current_directory->content);
     return NO_PROBLEM_FOUND;
 }
 
