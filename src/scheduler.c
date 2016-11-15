@@ -19,8 +19,6 @@ size_t proc_count = 0;
 size_t proc_current = 0;
 size_t proc_foreground = 0;
 
-file *workingDirectory;
-
 void interrupt_handler(interpretator_state *state) {
 	if(scheduler_flag) {
 		do {
@@ -75,16 +73,16 @@ int main() {
 	/* ... and every 250 msec after that. */
 	timer.it_interval.tv_sec = 0;
 	timer.it_interval.tv_usec = 250000;
-	workingDirectory = initFileSystem();
+	file* home = init_file_system();
 	char inputBody[] = "jobs\nend";
-	file *input = newFile(workingDirectory, "input", '-', lastRecord(workingDirectory));
-	addContent(input, inputBody, sizeof(inputBody));
+	file *input = new_file(*(record**)home->content, "input", '-');
+	add_content(input, inputBody, sizeof(inputBody));
 	
 	for(size_t i = 0; i < 256; i++) {
 		proc[i].status = PROC_KILLED;
 	}
 	
-	syscalls_exec(NULL);
+	syscalls_exec(NULL, home);
 	current_state = &proc[0];
 
 

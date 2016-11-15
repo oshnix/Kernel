@@ -36,10 +36,10 @@ void syscalls_jobs() {
 }
 
 void syscalls_lstat(){
-	printFileInfo(stdout, listDirectoryContent(workingDirectory));
+	//list_directory_content(workingDirectory, stdout);
 }
 
-void syscalls_exec(char* name) {
+void syscalls_exec(char* name, file* working_directory) {
 	int pid = 0;
 	for(int i = 0; i < 256; i++) {
 		if(proc[i].status == PROC_KILLED) {
@@ -48,7 +48,7 @@ void syscalls_exec(char* name) {
 		}
 	}
     printf("Syscall exec pid: %i\n", pid);
-	proc[pid] = initInterpretator(name, pid);
+	proc[pid] = initInterpretator(name, pid, working_directory);
 
 	if(proc[pid].status == PROC_INCORRECT) {
 		//syscalls_kill(pid);
@@ -76,6 +76,9 @@ int syscalls_kill(int pid) {
 	if(proc[pid].status == PROC_KILLED) {
 		return 1;
 	}
+	if(proc_count == 0 || pid == 0) {
+		exit(0);
+	}
 	if(proc[pid].program) {
 		free(proc[pid].name);
 		free(proc[pid].variables.essenceValues);
@@ -83,13 +86,10 @@ int syscalls_kill(int pid) {
 			free(proc[pid].variables.essenceNames[i]);
 		}
 		free(proc[pid].variables.essenceNames);
-		fclose(proc[pid].program);
+		free(proc[pid].program);
 	}
 	proc[pid].status = PROC_KILLED;
 	proc_count--;
-	if(proc_count == 0 || pid == 0) {
-		exit(0);
-	}
 	return 0;
 }
 

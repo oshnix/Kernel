@@ -33,6 +33,7 @@ typedef struct {
 	essence variables;
 	essence labels;
 	int position;
+	file* working_directory;
 	// proc
 	int pid;
 	proc_status status;
@@ -40,7 +41,7 @@ typedef struct {
 	struct pollfd fds[2];
 } interpretator_state;
 
-interpretator_state initInterpretator(char* file, int pid);
+interpretator_state initInterpretator(char* filename, int pid, file *workDirectory);
 
 int launchInterpretator(interpretator_state* state);
 

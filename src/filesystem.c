@@ -173,25 +173,3 @@ file* init_file_system(){
     file *home = new_file(NULL, "/", 'd');
     return home;
 }
-
-
-int main(){
-    /*
-    file *home = init_file_system();
-    file *profile = newFile(*(record**)home->content, "profile", '-');
-    file *res = newFile(*(record**)home->content, "res", 'd');
-    char hello[] = "Hello, world!";
-    char moreHel[] ="\nHalLo";
-    reWriteContent(profile, hello, sizeof(hello));
-    add_content(profile, moreHel, sizeof(moreHel));
-
-    record *records_list = list_directory_content(home);
-    printFileInfo(stdout, records_list);
-    move_file("profile", "res", home);
-    file *buf = navigate("res", home);
-    printFileInfo(stdout, list_directory_content(buf));
-    remove_file("profile", buf);
-    printFileInfo(stdout, list_directory_content(buf));
-     */
-    return 0;
-}

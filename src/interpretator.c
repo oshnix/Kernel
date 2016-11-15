@@ -202,7 +202,7 @@ char interpretateNextWord(interpretator_state *state) {
 			return ALL_OK;
         } else if (strcmp(state->word, "exec") == 0) {
 			state->buffer = strparse(state->word, state->buffer);
-			syscalls_exec(state->word);
+			syscalls_exec(state->word, state->working_directory);
 			return ALL_OK;
         } else {
             int variableIndex = isVariable(state->word, &state->variables);
@@ -303,17 +303,18 @@ char executeNextCommand(interpretator_state *state) {
     return ret;
 }
 
-interpretator_state initInterpretator(char* file, int pid) {
+interpretator_state initInterpretator(char* filename, int pid, file *working_directory) {
 	interpretator_state state;
     if(pid == 0) {
         state.program = NULL;
     } else {
-        state.program = initProc(file, workingDirectory);
+        state.program = initProc(filename, working_directory);
         if (!state.program) {
             state.status = PROC_INCORRECT;
             return state;
         }
     }
+    state.working_directory = working_directory;
     state.buffer = malloc(256);
     state.operand = malloc(OPERAND_MAX_SIZE);
     state.word = malloc(ESSENCE_NAME_SIZE + 2);
@@ -331,7 +332,7 @@ interpretator_state initInterpretator(char* file, int pid) {
 		state.fds[1].fd = STDOUT_FILENO;
 		state.fds[1].events = POLLOUT;
 	} else {
-		strcpy(state.name, file);
+		strcpy(state.name, filename);
 		//fillLabels(state.program, state.buffer, state.word, &state.labels);
 		state.position = 0;
 	}
