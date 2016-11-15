@@ -8,26 +8,44 @@
 
 int maximumInode = 0;
 
-record* lastRecord(file *directory){
-    record *last = *(record**)directory->content;
-    while(last->next != NULL){
-        last = last->next;
+record* lastRecord(record *currentRecord) {
+    while (currentRecord->next != NULL) {
+        currentRecord = currentRecord->next;
     }
-    return last;
+    return currentRecord;
 }
 
-void addFile(file *parent, file *child, record* previous){
+void addFile(record *previous, file *child){
     record *temp = malloc(sizeof(record));
     temp->previous = previous;
     temp->current = child;
     temp->next = NULL;
-    if(previous == NULL){
-        (parent->content = malloc(sizeof(void*)));
-        *(record**)(parent->content) = temp;
-    } else{
-        previous->next = temp;
+    previous->next = temp;
+    ++previous->current->fileSize;
+}
+
+file* newFile(record *currentCatalogRecord, char *filename, char type){
+    file *newFile = malloc(sizeof(file));
+    newFile->inode = maximumInode;
+    ++maximumInode;
+    newFile->name = filename;
+    newFile->type = type;
+    newFile->fileSize = 0;
+    newFile->content = NULL;
+    if(type == 'd'){
+        child = malloc(sizeof(record));
+        child->current = newFile;
+        (record*)newFile->content = child;
+        child->next = NULL;
+        ++child->current->fileSize;
+        if(currentCatalogRecord == NULL){
+            child->previous = child;
+            return newFile;
+        }
+        child->previous = currentCatalogRecord;
     }
-    ++parent->fileSize;
+    addFile(lastRecord(currentCatalogRecord), child);
+    return newFile;
 }
 
 void reWriteContent(file *regularFile, char *content, size_t content_len){
@@ -151,28 +169,6 @@ void addContent(file *regularFile, char *content, size_t content_len){
     regularFile->fileSize = regularFile->fileSize + content_len;
 }
 
-file* newFile(file *parent, char *filename, char type, record *prevRecord){
-    file *newFile = malloc(sizeof(file));
-    newFile->parent = parent;
-    newFile->inode = maximumInode;
-    ++maximumInode;
-    newFile->name = filename;
-    newFile->type = type;
-    newFile->fileSize = 0;
-    newFile->content = NULL;
-    if(parent != NULL){
-        addFile(parent, newFile, prevRecord);
-        if(type == 'd')
-            addFile(newFile, newFile, NULL);
-    }
-    else{
-        parent = newFile;
-        addFile(newFile, newFile, NULL);
-    }
-
-    return newFile;
-}
-
 
 file* initFileSystem(){
     file *home = newFile(NULL, "/", 'd', NULL);
@@ -180,17 +176,17 @@ file* initFileSystem(){
     return home;
 }
 
-/*
+
 int main(){
     file *home = initFileSystem();
     file *profile = newFile(home, "profile", '-',lastRecord(home));
     file *res = newFile(home, "res", 'd', lastRecord(home));
     printf("Content added: ");
     fflush(stdout);
-    char input[] =
-    //char moreHel[] ="\nHalLo";
+    char input[] = "Hello, world!";
+    char moreHel[] ="\nHalLo";
     reWriteContent(profile, hello, sizeof(hello));
-    //addContent(profile, moreHel, sizeof(moreHel));
+    addContent(profile, moreHel, sizeof(moreHel));
     record *recordsList = listDirectoryContent(home);
     printFileInfo(stdout, recordsList);
     moveFile("profile", "res", home);
@@ -199,4 +195,4 @@ int main(){
     removeFile("profile", buf);
     printFileInfo(stdout, listDirectoryContent(buf));
     return 0;
-}*/
+}

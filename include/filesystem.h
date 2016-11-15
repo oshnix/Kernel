@@ -4,7 +4,6 @@
 
 #pragma pack(push, 2)
 typedef struct file{
-    struct file *parent;
     int inode;
     char *name;
     char type;
