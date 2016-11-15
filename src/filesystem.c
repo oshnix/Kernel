@@ -8,23 +8,34 @@
 
 int maximumInode = 0;
 
-record* lastRecord(record *currentRecord) {
+record* last_record(record *currentRecord) {
     while (currentRecord->next != NULL) {
         currentRecord = currentRecord->next;
     }
     return currentRecord;
-}
+}//approved
 
-void addFile(record *previous, file *child){
+
+void add_simple_record(record *previous, file *child){
     record *temp = malloc(sizeof(record));
     temp->previous = previous;
     temp->current = child;
     temp->next = NULL;
     previous->next = temp;
     ++previous->current->fileSize;
-}
+}//approved
 
-file* newFile(record *currentCatalogRecord, char *filename, char type){
+void add_catatlog_record(record *parent_directory_record, file *new_directory){
+    record new_directory_record = malloc(sizeof(record));
+    new_directory_record->previous = parent_directory_record ? parent_directory_record : new_directory_record;
+    new_directory_record->current = new_directory;
+    new_directory->content = malloc(sizeof(void*));
+    *(record**)(new_directory->content) = new_directory_record;
+    new_directory_record->next = NULL;
+    ++child->current->fileSize;
+}//approved
+
+file* new_file(record *currentCatalogRecord, char *filename, char type){
     file *newFile = malloc(sizeof(file));
     newFile->inode = maximumInode;
     ++maximumInode;
@@ -32,36 +43,34 @@ file* newFile(record *currentCatalogRecord, char *filename, char type){
     newFile->type = type;
     newFile->fileSize = 0;
     newFile->content = NULL;
-    if(type == 'd'){
-        record *child = malloc(sizeof(record));
-        child->current = newFile;
-        newFile->content = malloc(sizeof(void*));
-        *(record**)(newFile->content) = child;
-        child->next = NULL;
-        ++child->current->fileSize;
-        if(currentCatalogRecord == NULL){
-            child->previous = child;
-            return newFile;
+    if(currentCatalogRecord == NULL){
+        add_catatlog_record(currentCatalogRecord, newFile);
+    } else{
+        if(type == 'd'){
+            add_catatlog_record(currentCatalogRecord, newFile);
         }
-        child->previous = currentCatalogRecord;
+        add_simple_record(last_record(currentCatalogRecord), newFile);
     }
-    printf("%d\n", newFile->inode);
-    addFile(lastRecord(currentCatalogRecord), newFile);
     return newFile;
-}
+}//approved
 
-void reWriteContent(file *regularFile, char *content, size_t content_len){
+void rewrite_file(file *regularFile, char *content, size_t content_len){
     regularFile->content = malloc(content_len+1);
     strncpy((char*)regularFile->content, content, content_len);
     regularFile->fileSize = content_len;
 }
 
-record* listDirectoryContent(file *directory){
+char list_directory_content(file *directory, FILE *fout){
     if(directory->type != 'd'){
         return IS_NOT_A_DIRECTORY;
     }
     else{
-        return *(record**)directory->content;
+        printf("Files in directory: %s\n", recordsList[0].current->name);
+        do{
+            fprintf(fout, "\t%s: %d %c %d\n", recordsList->current->name, recordsList->current->inode, recordsList->current->type, recordsList->current->fileSize);
+            recordsList = recordsList->next;
+        }while(recordsList != NULL);
+        return NO_PROBLEM_FOUND;
     }
 }
 
@@ -153,11 +162,7 @@ char moveFile(char *res, char *dest, file *currentDirectory){
 }
 
 char printFileInfo(FILE* fout, record *recordsList){
-    printf("Files in directory: %s\n", recordsList[0].current->name);
-    do{
-        fprintf(fout, "\t%s: %d %c %d\n", recordsList->current->name, recordsList->current->inode, recordsList->current->type, recordsList->current->fileSize);
-        recordsList = recordsList->next;
-    }while(recordsList != NULL);
+
 }
 
 void addContent(file *regularFile, char *content, size_t content_len){
