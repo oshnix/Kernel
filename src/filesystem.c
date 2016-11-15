@@ -132,12 +132,16 @@ char find_record(char *filename, file *current_directory, record **record_pointe
     char state = 1;
     while(*filename){
         filename = parse_string('\\', filename, word);
+        if(current_directory->type != 'd'){
+            return IS_NOT_A_DIRECTORY;
+        }
         *record_pointer = *(record**)current_directory->content;
-        if(!strcmp(word, "..")){
-            current_directory = (*record_pointer)->previous;
+        if(strcmp(word, "..") == 0){
+            current_directory = (*record_pointer)->previous->current;
+            if(*filename) ++filename;
+            continue;
         } else{
-            while(state = strcmp(word, (*record_pointer)->current->name) && (*record_pointer)->next != NULL){
-
+            while((state = strcmp(word, (*record_pointer)->current->name)) && (*record_pointer)->next != NULL){
                 *record_pointer = (*record_pointer)->next;
             }
         }
@@ -145,11 +149,7 @@ char find_record(char *filename, file *current_directory, record **record_pointe
             return FILE_NOT_FOUND;
         }
         if(*filename) ++filename;
-        if((*record_pointer)->current->type == 'd'){
-            current_directory = (*record_pointer)->current;
-        } else{
-            return IS_NOT_A_DIRECTORY;
-        }
+        current_directory = (*record_pointer)->current;
     }
     return NO_PROBLEM_FOUND;
 }
@@ -218,15 +218,16 @@ int main(){
     file *home = init_file_system();
     file *working_directory = home;
     file *res = new_file(*(record**)working_directory->content, "res", 'd', 3);
+    new_file(*(record**)working_directory->content, "profile", '-', sizeof("profile"));
     file* kill = new_file(*(record**)res->content, "kill", 'd', 4);
-    new_file(*(record**)kill->content, "mad", '-', 3);
+    file *mad = new_file(*(record**)kill->content, "mad", 'd', 3);
     record *down_record;
-    int a = find_record("res\\kill\\mad", home, &down_record);
+    int a = find_record("..\\..\\gav\\profile\\massaracsh", mad, &down_record);
     if(a == NO_PROBLEM_FOUND){
         printf("File info: %s %d\n", down_record->current->name, down_record->current->inode);
     }
     else{
-        printf("Some shit happened");
+        printf("Some shit happened\n");
     }
 
     /*
