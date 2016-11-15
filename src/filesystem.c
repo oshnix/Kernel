@@ -12,6 +12,7 @@ record* lastRecord(record *currentRecord) {
     while (currentRecord->next != NULL) {
         currentRecord = currentRecord->next;
     }
+    printf("%p\n", currentRecord);
     return currentRecord;
 }
 
@@ -33,9 +34,10 @@ file* newFile(record *currentCatalogRecord, char *filename, char type){
     newFile->fileSize = 0;
     newFile->content = NULL;
     if(type == 'd'){
-        child = malloc(sizeof(record));
+        record *child = malloc(sizeof(record));
         child->current = newFile;
-        (record*)newFile->content = child;
+        newFile->content = malloc(sizeof(void*));
+        *(record**)(newFile->content) = child;
         child->next = NULL;
         ++child->current->fileSize;
         if(currentCatalogRecord == NULL){
@@ -44,7 +46,8 @@ file* newFile(record *currentCatalogRecord, char *filename, char type){
         }
         child->previous = currentCatalogRecord;
     }
-    addFile(lastRecord(currentCatalogRecord), child);
+    printf("%d\n", newFile->inode);
+    addFile(lastRecord(currentCatalogRecord), newFile);
     return newFile;
 }
 
@@ -101,8 +104,8 @@ file* navigate(char *filename, file *currentDirectory){
 file* find(char *filename, file *currentDirectory){
     printf("INPUT\n");
     if(strcmp(".." , filename) == 0){
-        currentDirectory = currentDirectory->parent;
-        return currentDirectory;
+        record *temp = *((record**)(currentDirectory->content));
+        return temp->previous->current;
     }
     printf("INPUT  %p\n", currentDirectory);
     record *recordList = listDirectoryContent(currentDirectory);
@@ -116,7 +119,7 @@ file* find(char *filename, file *currentDirectory){
     printf("Not OK\n");
     return FILE_NOT_FOUND;
 }
-
+/*
 char moveFile(char *res, char *dest, file *currentDirectory){
     record *recordList = listDirectoryContent(currentDirectory);
     char resIsSet = 0, destIsSet = 0;
@@ -124,7 +127,8 @@ char moveFile(char *res, char *dest, file *currentDirectory){
     //file *res_file, *dest_file;
     if(strcmp("..", dest) == 0){
         destIsSet = 1;
-        dest_file->current = currentDirectory->parent;
+        record *temp = *(record**)(currentDirectory->content);
+        dest_file = temp->previous;
     }
     do{
         if(!resIsSet && strcmp(res, recordList->current->name) == 0){
@@ -154,6 +158,7 @@ char moveFile(char *res, char *dest, file *currentDirectory){
     }
 
 }
+ */
 
 char printFileInfo(FILE* fout, record *recordsList){
     printf("Files in directory: %s\n", recordsList[0].current->name);
@@ -171,28 +176,31 @@ void addContent(file *regularFile, char *content, size_t content_len){
 
 
 file* initFileSystem(){
-    file *home = newFile(NULL, "/", 'd', NULL);
-    home->parent = home;
+    file *home = newFile(NULL, "/", 'd');
     return home;
 }
 
 
 int main(){
     file *home = initFileSystem();
-    file *profile = newFile(home, "profile", '-',lastRecord(home));
-    file *res = newFile(home, "res", 'd', lastRecord(home));
-    printf("Content added: ");
+    printf("Content added: \n");
+    file *profile = newFile(*(record**)home->content, "profile", '-');
+    printf("Content added: \n");
+    file *res = newFile(*(record**)home->content, "res", 'd');
+    printf("Content added: \n");
     fflush(stdout);
+    /*
     char input[] = "Hello, world!";
     char moreHel[] ="\nHalLo";
     reWriteContent(profile, hello, sizeof(hello));
     addContent(profile, moreHel, sizeof(moreHel));
     record *recordsList = listDirectoryContent(home);
     printFileInfo(stdout, recordsList);
-    moveFile("profile", "res", home);
+    //moveFile("profile", "res", home);
     file *buf = navigate("res", home);
     printFileInfo(stdout, listDirectoryContent(buf));
     removeFile("profile", buf);
     printFileInfo(stdout, listDirectoryContent(buf));
+     */
     return 0;
 }
