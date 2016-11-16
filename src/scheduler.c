@@ -15,6 +15,7 @@ volatile int stop_flag = false;
 
 interpretator_state* current_state;
 interpretator_state proc[256];
+char *work_dir;
 size_t proc_count = 0;
 size_t proc_current = 0;
 size_t proc_foreground = 0;
@@ -95,14 +96,14 @@ int main() {
 	for(size_t i = 0; i < 256; i++) {
 		proc[i].status = PROC_KILLED;
 	}
+    work_dir = print_working_directory(home);
 	syscalls_exec(NULL, home);
 	current_state = &proc[0];
 
-	printf("sh > ");
+	printf("sh %s> ", work_dir);
 	fflush(stdout);
 	setitimer (ITIMER_PROF, &timer, NULL);
 	while(proc_count)
 		launchInterpretator(current_state);
-	
 	return 0;
 }

@@ -16,6 +16,7 @@ char goToLabel(interpretator_state *state);
 
 extern int scheduler_flag;
 extern size_t proc_foreground;
+extern char *work_dir;
 
 
 int isVariable(char *word, essence *list){
@@ -146,8 +147,6 @@ char nonSyscalls(interpretator_state *state){
     }
 }
 
-
-
 char interpretateNextWord(interpretator_state *state) {
     int variableIndex;
     file *buffer_file;
@@ -208,6 +207,7 @@ char interpretateNextWord(interpretator_state *state) {
             switch (error_code){
                 case NO_PROBLEM_FOUND:
                     state->working_directory = new_dir;
+                    work_dir = print_working_directory(state->working_directory);
                     break;
                 case IS_NOT_A_DIRECTORY:
                     printf("%s is not a directory\n", state->word);
@@ -328,7 +328,7 @@ char executeNextCommand(interpretator_state *state) {
         printf("Wrong input\n");
     }
     if(state->pid == 0 && proc_foreground == state->pid) {
-		printf("sh > ");
+        printf("sh %s> ", work_dir);
 		fflush(stdout);
 		fflush(stdin);
 	}

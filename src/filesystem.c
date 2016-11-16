@@ -115,7 +115,7 @@ char new_file(file *current_directory, char *filename, char type, file **created
 char *previous_level(record *current_dir, int *length, char *string){
     current_dir = *(record**)(current_dir->current)->content;
     if(current_dir->current->name[0] != '/'){
-        *length += strlen(current_dir->current->name);
+        *length += strlen(current_dir->current->name) + 1;
         string = previous_level(current_dir->previous, length, string);
     } else{
         string = malloc(sizeof(char)*(*length + 2));
@@ -123,6 +123,7 @@ char *previous_level(record *current_dir, int *length, char *string){
         return string;
     }
     string = parser_without_terminator(directory_delim, current_dir->current->name, string);
+    *(string++) = '/';
     return string;
 
 }
