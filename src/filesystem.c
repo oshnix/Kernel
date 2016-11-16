@@ -56,7 +56,8 @@ void add_catatlog_record(record *parent_directory_record, file *new_directory){
 
 /*
  * @DESCRIPTION: на вход подаётся запись - '.' - информация о текущем каталоге
- * имя файла, которое мы хотим создать, тип файла и длину имени файла.
+ * имя файла, которое мы хотим создать, тип файла и указатель на указатель на файл
+ * В случае успеха - в указатель помещается указатель на новый файл. Возвращается - код ошибки.
  */
 
 
@@ -119,6 +120,27 @@ char list_directory_content(file *directory, FILE *fout){
     }
 }//approved
 
+/*
+ * @DESCRIPTION:
+ * На вход подаются - указатель на массив char'ов (filename), указатель на
+ * файл(curent_directory), указатель на указатель на запись(record_pointer)
+ *
+ * В ходе выполнения ищется указанный файл. Если он найден:
+ * возвращается код ошибки FILE_ALLREADY_EXISTS и через record_pointer
+ * возврашается запись, с которой указанный файл ассоциируется
+ *
+ * Если файл не найден, но нам удалось дойти до директории, в которой он должен лежать:
+ * возвращается код ошибки FILENAME_NOT_FOUND, имя файла без пути к нему возвращается
+ * через filename, а указатель на запись, которая ассоциируется с той директорией, в которой
+ * мы ищем файл - возвращается через record_pointer
+ *
+ * Если по пути мы встретили несуществующую директорию:
+ * возвращается код ошибки NO_DIRECTORY_WITH_SUCH_NAME
+ *
+ * Если filename не является файлом:
+ * возвращается код ошибки IS_NOT_A_DIRECTORY
+ * (не должно происходить при корректной работе)
+ */
 
 char find_record(char **filename, file *current_directory, record **record_pointer){
     char *word = malloc(52 * sizeof(char));
@@ -252,18 +274,3 @@ char move_file(char *res, char *dest, file *current_directory){
         return IS_NOT_A_DIRECTORY;
     }
 }
-
-/*
-int main(){
-    file *home = init_file_system();
-    list_directory_content(home,stdout);
-    file *res;
-    new_file(home, "res", 'd', &res);
-    list_directory_content(home,stdout);
-    file *input;
-    new_file(home, "res\\input", '-', &input);
-    list_directory_content(res,stdout);
-
-    return 0;
-}
- */

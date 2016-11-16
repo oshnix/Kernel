@@ -18,35 +18,43 @@ typedef struct record{
      file  *current;
 }record;
 
+//1
+
 char *parse_string(const char delim, char *src, char *dest);
+
+//2
+
+file* init_file_system();
 
 void add_simple_record(record *previous, file *child);
 
 void add_catatlog_record(record *parent_directory_record, file *new_directory);
 
+char new_file(file *current_directory, char *filename, char type, file **created_file);
+
+//3
+
 record* last_record(record *current_record);
 
-char new_file(file *current_directory, char *filename, char type, file **created_file);
+char list_directory_content(file *directory, FILE *fout);
 
 char find_record(char **filename, file *current_directory, record **record_pointer);
 
-void rewrite_file(file *regularFile, char *content, size_t content_len);
+//4
 
-char list_directory_content(file *directory, FILE *fout);
+void rewrite_file(file *regularFile, char *content, size_t content_len);
+void add_content(file *regularFile, char *content, size_t content_len);
+
+//5
 
 void cutRecord(record *record_to_delete);
 
 char remove_file(char *filename, file *current_directory);
 
-file* find(char *filename, file *current_directory);
-
 char navigate(char *filename, file *current_directory, file ** file_pointer);
 
 char move_file(char *res, char *dest, file *current_directory);
 
-void add_content(file *regularFile, char *content, size_t content_len);
-
-file* init_file_system();
 
 
 #endif
