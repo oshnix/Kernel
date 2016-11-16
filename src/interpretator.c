@@ -211,8 +211,6 @@ char interpretateNextWord(interpretator_state *state) {
 			pid = strtol(state->word, &endptr, 10);
 			syscalls_bg(pid);
 			return ALL_OK;
-        } else if (strcmp(state->word, "write") == 0) {
-			return ALL_OK;
         } else if (strcmp(state->word, "jobs") == 0) {
 			syscalls_jobs();
 			return ALL_OK;
@@ -270,11 +268,17 @@ char interpretateNextWord(interpretator_state *state) {
                 printf("%s:\n%s\n", found_rec->current->name, (char*)found_rec->current->content);
             }
             return ALL_OK;
-        }/*else if (strcmp(state->word, "mv") == 0) {
+        } else if (strcmp(state->word, "mv") == 0) {
+            char *buf = malloc(ESSENCE_NAME_SIZE);
             state->buffer = strparse(state->word, state->buffer);
-            error_code = new_file(state->working_directory, state->word, '-', &buffer_file);
+            state->buffer = strparse(buf, state->buffer);
+            error_code = move_file(state->word, buf, state->working_directory);
+            free(buf);
+            if(error_code != NO_PROBLEM_FOUND){
+                return SHIT_HAPPENED;
+            }
             return ALL_OK;
-        }*/ else if (strcmp(state->word, "pwd") == 0) {
+        } else if (strcmp(state->word, "pwd") == 0) {
             char *working_directory_path = print_working_directory(state->working_directory);
             printf("Output: %s\n", working_directory_path);
             return ALL_OK;

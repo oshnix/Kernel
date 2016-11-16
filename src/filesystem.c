@@ -305,8 +305,26 @@ char navigate(char *filename, file *current_directory, file ** file_pointer){
 }//approved
 
 char move_file(char *res, char *dest, file *current_directory){
-    record *record_list = *(record**)current_directory->content;
-    char res_set = 0, des_set = 0;
+    record *record_dest, *record_res;
+    char error_code = find_record(&res, current_directory, &record_res);
+    if(error_code != FILE_ALLREADY_EXISTS){
+        return error_code;
+    }
+    current_directory = get_file_parent(record_res);
+    error_code = find_record(&dest, current_directory, &record_dest);
+    if(error_code != FILE_ALLREADY_EXISTS){
+        return error_code;
+    }
+    if(record_dest->current != record_res->current && record_dest->current->type == 'd' && record_res->current != get_file_parent(record_dest)){
+        --(get_file_parent(record_res)->fileSize);
+        add_simple_record(last_record(*(record**)record_dest->current->content), record_res->current);
+        cut_record(record_res);
+        ++current_directory->fileSize;
+        return NO_PROBLEM_FOUND;
+    } else{
+        return INVALID_FILE_NAME;
+    }
+    /*
     record *res_file, *dest_file;
     if(strcmp("..", dest) == 0){
         des_set = 1;
@@ -338,4 +356,5 @@ char move_file(char *res, char *dest, file *current_directory){
     else{
         return IS_NOT_A_DIRECTORY;
     }
+        */
 }
