@@ -84,11 +84,11 @@ int main() {
     char inpBody1[] = "X = 100\n"
             "Y = 1\n"
             "loop: Y = Y * X\n"
-            "    X = X - 1\n"
+            "X = X - 1\n"
             "if X >= 1 goto loop\n"
             "goto loop\n"
             "print y\n"
-            "      end";
+            "end";
 	file *inp1;
     new_file(home, "input1", '-', &inp1);
 	rewrite_file(inp1, inpBody1, sizeof(inpBody1));

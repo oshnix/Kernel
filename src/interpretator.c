@@ -254,7 +254,18 @@ char interpretateNextWord(interpretator_state *state) {
 			state->buffer = strparse(state->word, state->buffer);
             error_code = new_file(state->working_directory, state->word, '-', &buffer_file);
 			return ALL_OK;
-        } else if (strcmp(state->word, "pwd") == 0) {
+        }else if (strcmp(state->word, "rm") == 0) {
+            state->buffer = strparse(state->word, state->buffer);
+            error_code = remove_file(state->word, state->working_directory);
+            if(error_code != NO_PROBLEM_FOUND){
+                printf("Some problem found\n");
+            }
+            return ALL_OK;
+        }/*else if (strcmp(state->word, "mv") == 0) {
+            state->buffer = strparse(state->word, state->buffer);
+            error_code = new_file(state->working_directory, state->word, '-', &buffer_file);
+            return ALL_OK;
+        }*/ else if (strcmp(state->word, "pwd") == 0) {
             char *working_directory_path = print_working_directory(state->working_directory);
             printf("Output: %s\n", working_directory_path);
             return ALL_OK;
@@ -318,7 +329,6 @@ void fillLabels(interpretator_state *state){
     while(1) {
         state->buffer = getline_file(state->program, &state->position);
         state->buffer = strparse(state->word, state->buffer);
-        //printf("%s\n", state->word);
         if (state->word[strlen(state->word) - 1] == ':') {
             addLabel(state);
         }
@@ -350,9 +360,6 @@ char executeNextCommand(interpretator_state *state) {
     state->buffer = buffer;
     state->buffer = strparse(state->word, state->buffer);
     char ret = interpretateNextWord(state);
-    if(ret == SHIT_HAPPENED){
-        //printf("Wrong input\n");
-    }
     if(state->pid == 0 && proc_foreground == state->pid) {
         printf("sh %s> ", work_dir);
 		fflush(stdout);

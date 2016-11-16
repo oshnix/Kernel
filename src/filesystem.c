@@ -245,21 +245,21 @@ void cut_record(record *record_to_delete){
 }//approved
 
 char remove_file(char *filename, file *current_directory){
-    record *record_list = *(record**)current_directory->content;
-    do{
-        if(strcmp(record_list->current->name,filename) == 0 ){
-            if(record_list->previous != NULL){
-                free(record_list->current);
-                cut_record(record_list);
-                return NO_PROBLEM_FOUND;
-            }
-            else{
-                return CANNOT_REMOVE_DIRECTORY;
-            }
+    record *found_file;
+    char err_code = find_record(&filename, current_directory, &found_file);
+    if(err_code == FILE_ALLREADY_EXISTS){
+        if(found_file->current->type == '-'){
+            free(found_file->current);
+            cut_record(found_file);
+            return NO_PROBLEM_FOUND;
         }
-        record_list = record_list->next;
-    }while(record_list != NULL);
-    return FILENAME_NOT_FOUND;
+        else{
+            return IS_NOT_A_REGULAR_FILE;
+        }
+    }
+    else{
+        return err_code;
+    }
 }//need to check it
 
 
