@@ -4,7 +4,7 @@ CFLAGS= -pedantic -Wall -I$(IDIR)
 BDIR=./build
 LIBS= -lm
 LDK = -o
-CDK= -c
+CDK= -c -g
 TARGET=main
 SRC=$(wildcard src/*.c)
 OBJ=$(SRC:src/%.c=build/%.o)

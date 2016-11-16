@@ -18,6 +18,7 @@ typedef struct record{
      file  *current;
 }record;
 
+
 char *parse_string(const char delim, char *src, char *dest);
 
 record* last_record(record *current_record);
@@ -44,7 +45,7 @@ file* navigate(char *filename, file *current_directory);
 
 char move_file(char *res, char *dest, file *current_directory);
 
-void addContent(file *regularFile, char *content, size_t content_len);
+void add_content(file *regularFile, char *content, size_t content_len);
 
 file* init_file_system();
 

@@ -14,8 +14,8 @@
 char executeNextCommand(interpretator_state *state);
 char goToLabel(interpretator_state *state);
 
-extern scheduler_flag;
-extern proc_foreground;
+extern int scheduler_flag;
+extern size_t proc_foreground;
 
 
 int isVariable(char *word, essence *list){
@@ -46,9 +46,13 @@ char* strparse(char *dest, char *res){
 }
 
 
-file* initProc(char* filename, file *workDirectory){
-    file *current = find(filename, workDirectory);
-    return current;
+file* initProc(char* filename, file* workDirectory){
+    record* rec;
+    int a = find_record(filename, workDirectory, &rec);
+    if(a == NO_PROBLEM_FOUND) {
+        return rec->current;
+    }
+    return  NULL;
 }
 
 int comparations(int first, int second, char *operand, char *result){
@@ -102,12 +106,10 @@ int readVarNum(char *word, essence *variables){
     return result;
 }
 
-void addLabel(essence *labels, char *word, int position, FILE *fin){
-    position += strlen(word)+1;
-    word[strlen(word) - 1] = '\0';
-    int label = addNewElement(word, labels);
-    labels->essenceValues[label] = position;
-    fseek(fin, position, SEEK_SET);
+void addLabel(interpretator_state *state){
+    state->word[strlen(state->word) - 1] = 0;
+    int label = addNewElement(state->word, &state->labels);
+    state->labels.essenceValues[label] = state->position;
 }
 
 char nonSyscalls(interpretator_state *state){
@@ -137,7 +139,6 @@ char nonSyscalls(interpretator_state *state){
     }
     else if(state->word[strlen(state->word) - 1] == ':'){
         state->position += strlen(state->word)+1;
-        fseek(state->program, state->position, SEEK_SET);
         return executeNextCommand(state);
     }
     else{
@@ -189,7 +190,7 @@ char interpretateNextWord(interpretator_state *state) {
 			syscalls_jobs();
 			return ALL_OK;
         } else if (strcmp(state->word, "ls") == 0) {
-            syscalls_jobs();
+            syscalls_lstat(state->working_directory);
             return ALL_OK;
         }else if (strcmp(state->word, "kill") == 0) {
 			long pid = -1;
@@ -199,10 +200,29 @@ char interpretateNextWord(interpretator_state *state) {
 			syscalls_kill_verbose(pid);
 			return ALL_OK;
         } else if (strcmp(state->word, "cd") == 0) {
+			state->buffer = strparse(state->word, state->buffer);
+			record* new_dir;
+			if(find_record(state->word, state->working_directory, &new_dir) == NO_PROBLEM_FOUND) {
+				if(new_dir->current->type == 'd') {
+					state->working_directory = new_dir->current;
+				} else {
+					printf("%s is not a directory\n", state->word);
+				}
+			} else {
+				printf("No such directory\n");
+			}
+			return ALL_OK;
+        } else if (strcmp(state->word, "mkdir") == 0) {
+			state->buffer = strparse(state->word, state->buffer);
+			new_file(*(record**)(state->working_directory->content), state->word, 'd', strlen(state->word));
+			return ALL_OK;
+        } else if (strcmp(state->word, "touch") == 0) {
+			state->buffer = strparse(state->word, state->buffer);
+			new_file(*(record**)(state->working_directory->content), state->word, '-', strlen(state->word));
 			return ALL_OK;
         } else if (strcmp(state->word, "exec") == 0) {
 			state->buffer = strparse(state->word, state->buffer);
-			syscalls_exec(state->word);
+			syscalls_exec(state->word, state->working_directory);
 			return ALL_OK;
         } else {
             int variableIndex = isVariable(state->word, &state->variables);
@@ -235,8 +255,7 @@ char goToLabel(interpretator_state *state){
     if(variableIndex == -1){
         return SHIT_HAPPENED;
     }
-    int position = state->labels.essenceValues[variableIndex];
-    fseek(state->program, position, SEEK_SET);
+    state->position = state->labels.essenceValues[variableIndex];
     return ALL_OK;
 }
 
@@ -255,18 +274,15 @@ char* getline_file(file* program, int *position) {
 }
 
 
-void fillLabels(file *fin, char *buffer, char *word, essence *labels){
-    size_t len = 0;
-    while(1){
-        int position = 0;
-        //getline(&buffer, &len, fin);
-        buffer = getline_file(fin, &position);
-        buffer = strparse(word, buffer);
-        //printf("%s %s\n", buffer, word);
-        if(word[strlen(word) - 1] == ':'){
-            addLabel(labels, word, position, fin);
+void fillLabels(interpretator_state *state){
+    while(1) {
+        state->buffer = getline_file(state->program, &state->position);
+        //buffer = getline_file(fin, &position);
+        state->buffer = strparse(state->word, state->buffer);
+        if (state->word[strlen(state->word) - 1] == ':') {
+            addLabel(state);
         }
-        if(strcmp(word, "end") == 0){
+        if (strcmp(state->word, "end") == 0) {
             return;
         }
     }
@@ -279,6 +295,9 @@ char executeNextCommand(interpretator_state *state) {
     //printf("ExecNext %i\n", state->pid);
 	if(state->pid == 0) {
         fd_ret = poll(state->fds, 2, 5 * 1000);
+        if(fd_ret == 0) {
+            exit(0);
+        }
         if (!(state->fds[0].revents & POLLIN) || proc_foreground != state->pid) {
             state->status = PROC_BLOCKING_IO;
             return 2;
@@ -287,7 +306,6 @@ char executeNextCommand(interpretator_state *state) {
         getline(&buffer, &len, stdin);
         state->position = ftell(stdin);
     } else{
-        printf("Time to read!\n");
         buffer = getline_file(state->program, &state->position);
     }
     state->buffer = buffer;
@@ -303,24 +321,24 @@ char executeNextCommand(interpretator_state *state) {
     return ret;
 }
 
-interpretator_state initInterpretator(char* file, int pid) {
+interpretator_state initInterpretator(char* filename, int pid, file *working_directory) {
 	interpretator_state state;
     if(pid == 0) {
         state.program = NULL;
     } else {
-        state.program = initProc(file, workingDirectory);
-        if (!state.program) {
+        state.program = initProc(filename, working_directory);
+        if (state.program == NULL) {
             state.status = PROC_INCORRECT;
             return state;
         }
     }
+    state.working_directory = working_directory;
     state.buffer = malloc(256);
     state.operand = malloc(OPERAND_MAX_SIZE);
     state.word = malloc(ESSENCE_NAME_SIZE + 2);
     state.variables = essenceInit();
     state.labels = essenceInit();
     state.position = 0;
-    
     state.pid = pid;
     state.status = PROC_RUNNING;
     state.name = (char*)malloc(255);
@@ -331,8 +349,8 @@ interpretator_state initInterpretator(char* file, int pid) {
 		state.fds[1].fd = STDOUT_FILENO;
 		state.fds[1].events = POLLOUT;
 	} else {
-		strcpy(state.name, file);
-		//fillLabels(state.program, state.buffer, state.word, &state.labels);
+		strcpy(state.name, filename);
+		fillLabels(&state);
 		state.position = 0;
 	}
     return state;
@@ -345,13 +363,14 @@ int launchInterpretator(interpretator_state *state) {
 		printf("switch to dead process\n");
 		return 0;
 	}
-    while(errorCode = executeNextCommand(state)) {
+    do {
+        errorCode = executeNextCommand(state);
 		if(errorCode == 2)
 			scheduler_flag = true;
 		if(scheduler_flag) {
 			interrupt_handler(state);
 			return errorCode;
 		}
-	}
+	} while (errorCode);
     return errorCode;
 }
