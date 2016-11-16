@@ -241,6 +241,7 @@ char interpretateNextWord(interpretator_state *state) {
             if (variableIndex == -1) variableIndex = addNewElement(state->word, &state->variables);
             state->buffer = strparse(state->word, state->buffer);
             if (state->word[0] != '=') {
+                --state->variables.essenceCount;
                 return SHIT_HAPPENED;
             }
             state->buffer = strparse(state->word, state->buffer);
@@ -323,6 +324,9 @@ char executeNextCommand(interpretator_state *state) {
     state->buffer = buffer;
     state->buffer = strparse(state->word, state->buffer);
     char ret = interpretateNextWord(state);
+    if(ret == SHIT_HAPPENED){
+        printf("Wrong input\n");
+    }
     if(state->pid == 0 && proc_foreground == state->pid) {
 		printf("sh > ");
 		fflush(stdout);

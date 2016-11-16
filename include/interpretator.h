@@ -6,7 +6,7 @@
 #include <sys/poll.h>
 
 #define START_ESSENCE_SIZE 8
-#define ESSENCE_NAME_SIZE 50
+#define ESSENCE_NAME_SIZE 500
 #define SIZE_OF_OPERATION 3
 #define OPERAND_MAX_SIZE 6
 
