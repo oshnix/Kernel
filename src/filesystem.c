@@ -65,7 +65,6 @@ char new_file(file *current_directory, char *filename, char type, file **created
     char error_code;
     if(current_directory != NULL){
         error_code = find_record(&filename, current_directory, &record_to_find);
-        //printf("File_Name: %s\n",filename);
         if(error_code != FILENAME_NOT_FOUND){
             return error_code;
         }
@@ -82,7 +81,6 @@ char new_file(file *current_directory, char *filename, char type, file **created
     (*created_file)->type = type;
     (*created_file)->fileSize = 0;
     (*created_file)->content = NULL;
-
     if(type == 'd'){
         add_catatlog_record(record_to_find, *created_file);
     }
@@ -125,7 +123,6 @@ char list_directory_content(file *directory, FILE *fout){
 char find_record(char **filename, file *current_directory, record **record_pointer){
     char *word = malloc(52 * sizeof(char));
     char state = 1;
-
     while(**filename){
         *filename = parse_string('\\', *filename, word);
         if(current_directory->type != 'd'){
@@ -144,9 +141,9 @@ char find_record(char **filename, file *current_directory, record **record_point
         }
         if(**filename) ++(*filename);
         if(state){
-
             if(!(**filename)){
                 *filename = word;
+                *record_pointer = *(record**)(current_directory->content);
                 return FILENAME_NOT_FOUND;
             }
             return NO_DIRECTORY_WITH_SUCH_NAME;
@@ -208,6 +205,7 @@ char navigate(char *filename, file *current_directory, file ** file_pointer){
     record *found_rec;
     char error_code = find_record(&filename, current_directory, &found_rec);
     if(error_code == FILE_ALLREADY_EXISTS){
+        printf("%s %c\n",found_rec->current->name, found_rec->current->type);
         if(found_rec->current->type == 'd'){
             *file_pointer = found_rec->current;
             return NO_PROBLEM_FOUND;
