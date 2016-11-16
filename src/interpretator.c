@@ -215,7 +215,7 @@ char interpretateNextWord(interpretator_state *state) {
                     printf("No such directory\n");
                     break;
                 default:
-                    printf("Unknown error happened");
+                    printf("Unknown error happened\n");
                     break;
             }
 			return ALL_OK;
@@ -225,7 +225,7 @@ char interpretateNextWord(interpretator_state *state) {
 			return ALL_OK;
         } else if (strcmp(state->word, "touch") == 0) {
 			state->buffer = strparse(state->word, state->buffer);
-            error_code = new_file(state->working_directory, state->word, 'd', &buffer_file);
+            error_code = new_file(state->working_directory, state->word, '-', &buffer_file);
 			return ALL_OK;
         } else if (strcmp(state->word, "exec") == 0) {
 			state->buffer = strparse(state->word, state->buffer);

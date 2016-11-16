@@ -8,6 +8,8 @@
 
 int maximumInode = 0;
 
+const char directory_delim = '/';
+
 /*
  * 1 - вспомогательные функции
  */
@@ -73,6 +75,9 @@ char new_file(file *current_directory, char *filename, char type, file **created
 
         record_to_find = NULL;
     }
+    if(!*filename){
+        return INVALID_FILE_NAME;
+    }
     *created_file = malloc(sizeof(file));
     (*created_file)->inode = maximumInode;
     ++maximumInode;
@@ -96,6 +101,16 @@ char new_file(file *current_directory, char *filename, char type, file **created
 /*
  * 3 - поиск уже существующих файлов\записей
  */
+
+/*
+
+char* print_working_directory(file *working_directory){
+    char *path_to_directory;
+    while(working_directory->name != '/'){
+
+    }
+}
+*/
 
 
 record* last_record(record *current_record) {
@@ -146,7 +161,7 @@ char find_record(char **filename, file *current_directory, record **record_point
     char *word = malloc(52 * sizeof(char));
     char state = 1;
     while(**filename){
-        *filename = parse_string('\\', *filename, word);
+        *filename = parse_string(directory_delim, *filename, word);
         if(current_directory->type != 'd'){
             return IS_NOT_A_DIRECTORY;
         }
@@ -227,7 +242,6 @@ char navigate(char *filename, file *current_directory, file ** file_pointer){
     record *found_rec;
     char error_code = find_record(&filename, current_directory, &found_rec);
     if(error_code == FILE_ALLREADY_EXISTS){
-        printf("%s %c\n",found_rec->current->name, found_rec->current->type);
         if(found_rec->current->type == 'd'){
             *file_pointer = found_rec->current;
             return NO_PROBLEM_FOUND;
