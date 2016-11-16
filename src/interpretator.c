@@ -169,7 +169,33 @@ char interpretateNextWord(interpretator_state *state) {
 			syscalls_kill(state->pid);
             return 2;
 
-        } else if (strcmp(state->word, "read") == 0) {
+        } else if (strcmp(state->word, "cat") == 0) {
+			state->buffer = strparse(state->word, state->buffer);
+			file* file_cat;
+			record *found_rec;
+			char error_code = find_record(&state->word, state->working_directory, &found_rec);
+			if(error_code == FILE_ALLREADY_EXISTS){
+				if(found_rec->current->type == '-'){
+					file_cat = found_rec->current;
+					char* buffer = NULL;
+					size_t len;
+					while(getline(&buffer, &len, stdin)) {
+						//printf("got: %s\n", buffer);
+						len = strlen(buffer);
+						if(len == 0) {
+							break;
+						}
+						add_content(file_cat, buffer, len);
+						free(buffer);
+						buffer = NULL;
+					} 
+				} else {
+					printf("cat: invalid file\n");
+				}
+			} else {
+				printf("cat: no such file\n");
+			}
+			
 			return ALL_OK;
         } else if (strcmp(state->word, "fg") == 0) {
 			long pid = -1;
@@ -292,7 +318,7 @@ void fillLabels(interpretator_state *state){
     while(1) {
         state->buffer = getline_file(state->program, &state->position);
         state->buffer = strparse(state->word, state->buffer);
-        printf("%s\n", state->word);
+        //printf("%s\n", state->word);
         if (state->word[strlen(state->word) - 1] == ':') {
             addLabel(state);
         }
@@ -325,7 +351,7 @@ char executeNextCommand(interpretator_state *state) {
     state->buffer = strparse(state->word, state->buffer);
     char ret = interpretateNextWord(state);
     if(ret == SHIT_HAPPENED){
-        printf("Wrong input\n");
+        //printf("Wrong input\n");
     }
     if(state->pid == 0 && proc_foreground == state->pid) {
         printf("sh %s> ", work_dir);

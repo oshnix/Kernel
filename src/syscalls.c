@@ -56,7 +56,7 @@ void syscalls_exec(char* name, file* working_directory) {
 		printf("sh: file %s not exists\n", name);
 	} else {
 		proc_count++;
-        printf("proc[%i] inited\n", pid);
+        printf("Process %s started\n", name);
 	}
 }
 

@@ -78,7 +78,7 @@ int main() {
 	timer.it_interval.tv_sec = 0;
 	timer.it_interval.tv_usec = 250000;
 	file* home = init_file_system();
-	char inputBody[] = "jobs\nend";
+	char inputBody[] = "read X\nend";
 	file *input;
 	new_file(home, "input", '-', &input);
     char inpBody1[] = "X = 100\n"
@@ -97,7 +97,7 @@ int main() {
 		proc[i].status = PROC_KILLED;
 	}
     work_dir = print_working_directory(home);
-	syscalls_exec(NULL, home);
+	syscalls_exec("shell", home);
 	current_state = &proc[0];
 
 	printf("sh %s> ", work_dir);
