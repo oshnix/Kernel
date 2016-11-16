@@ -227,7 +227,7 @@ void rewrite_file(file *regular_file, char *content, size_t content_len){
 
 void add_content(file *regular_file, char *content, size_t content_len){
     regular_file->content = realloc(regular_file->content, regular_file->fileSize + content_len + 1);
-    strncpy((char*)((record*)(regular_file->content) + regular_file->fileSize), content, content_len);
+    strncpy((char*)regular_file->content + regular_file->fileSize, content, content_len);
     regular_file->fileSize = regular_file->fileSize + content_len;
 }
 

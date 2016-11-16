@@ -90,7 +90,7 @@ int main() {
             "      end";
 	file *inp1;
     new_file(home, "input1", '-', &inp1);
-    add_content(inp1, inpBody1, sizeof(inpBody1));
+	rewrite_file(inp1, inpBody1, sizeof(inpBody1));
 	add_content(input, inputBody, sizeof(inputBody));
 	for(size_t i = 0; i < 256; i++) {
 		proc[i].status = PROC_KILLED;

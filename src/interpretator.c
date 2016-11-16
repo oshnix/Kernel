@@ -165,6 +165,7 @@ char interpretateNextWord(interpretator_state *state) {
             return ALL_OK;
 
         } else if (strcmp(state->word, "end") == 0) {
+
 			printf("Process %s exits\n", state->name);
 			syscalls_kill(state->pid);
             return 2;
@@ -273,7 +274,7 @@ char goToLabel(interpretator_state *state){
 char* getline_file(file* program, int *position) {
     int i = *position;
     int size;
-    char* content = (char*)program->content;
+    char *content = (char*)program->content;
     while(content[i] != '\n' && content[i] != 0) {
         i++;
     }
@@ -281,6 +282,7 @@ char* getline_file(file* program, int *position) {
     char* result = (char*)malloc(size*sizeof(char));
     strncpy(result, content + *position, size);
     *position += size + 1;
+
     return result;
 }
 
@@ -288,8 +290,8 @@ char* getline_file(file* program, int *position) {
 void fillLabels(interpretator_state *state){
     while(1) {
         state->buffer = getline_file(state->program, &state->position);
-        //buffer = getline_file(fin, &position);
         state->buffer = strparse(state->word, state->buffer);
+        printf("%s\n", state->word);
         if (state->word[strlen(state->word) - 1] == ':') {
             addLabel(state);
         }
@@ -303,7 +305,6 @@ char executeNextCommand(interpretator_state *state) {
     char *buffer;
     size_t len = 0;
     int fd_ret;
-    //printf("ExecNext %i\n", state->pid);
 	if(state->pid == 0) {
         fd_ret = poll(state->fds, 2, 5 * 1000);
         if(fd_ret == 0) {
@@ -320,7 +321,6 @@ char executeNextCommand(interpretator_state *state) {
         buffer = getline_file(state->program, &state->position);
     }
     state->buffer = buffer;
-    //printf("Get: %s", state->buffer);
     state->buffer = strparse(state->word, state->buffer);
     char ret = interpretateNextWord(state);
     if(state->pid == 0 && proc_foreground == state->pid) {
