@@ -4,6 +4,7 @@ CFLAGS= -pedantic -Wall -I$(IDIR)
 BDIR=./build
 LIBS= -lm
 LDK = -o
+FS = src/filesystem.c
 CDK= -c -g
 TARGET=main
 SRC=$(wildcard src/*.c)
@@ -20,4 +21,5 @@ build/%.o: src/%.c
 clean:
 	rm -rf $(TARGET) build/
 	mkdir build
-
+filesystem:
+	$(CC) $(LDK) file $(FS) $(CFLAGS)
