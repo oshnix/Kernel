@@ -48,13 +48,14 @@ void syscalls_exec(char* name, file* working_directory) {
 		}
 	}
 	proc[pid] = initInterpretator(name, pid, working_directory);
-
 	if(proc[pid].status == PROC_INCORRECT) {
 		//syscalls_kill(pid);
-		proc[pid].status = PROC_INCORRECT;
+        printf("proc[%i] incorrect\n", pid);
+		proc[pid].status = PROC_KILLED;
 		printf("sh: file %s not exists\n", name);
 	} else {
 		proc_count++;
+        printf("proc[%i] inited\n", pid);
 	}
 }
 
@@ -85,7 +86,7 @@ int syscalls_kill(int pid) {
 			free(proc[pid].variables.essenceNames[i]);
 		}
 		free(proc[pid].variables.essenceNames);
-		free(proc[pid].program);
+		//free(proc[pid].program);
 	}
 	proc[pid].status = PROC_KILLED;
 	proc_count--;

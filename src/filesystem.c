@@ -140,6 +140,7 @@ char find_record(char *filename, file *current_directory, record **record_pointe
         if(strcmp(word, "..") == 0){
             current_directory = (*record_pointer)->previous->current;
             if(*filename) ++filename;
+            else *record_pointer = *(record**)(current_directory->content);
             continue;
         } else{
             while((state = strcmp(word, (*record_pointer)->current->name)) && (*record_pointer)->next != NULL){
@@ -152,7 +153,6 @@ char find_record(char *filename, file *current_directory, record **record_pointe
         if(*filename) ++filename;
         current_directory = (*record_pointer)->current;
     }
-    *record_pointer = *(record**)(current_directory->content);
     return NO_PROBLEM_FOUND;
 }
 
@@ -164,7 +164,6 @@ file* navigate(char *filename, file *current_directory){
         return temp;
     }
 }
-
 
 char move_file(char *res, char *dest, file *current_directory){
     record *record_list = *(record**)current_directory->content;

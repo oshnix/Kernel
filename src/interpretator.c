@@ -46,9 +46,13 @@ char* strparse(char *dest, char *res){
 }
 
 
-file* initProc(char* filename, file *workDirectory){
-    file *current = find(filename, workDirectory);
-    return current;
+file* initProc(char* filename, file* workDirectory){
+    record* rec;
+    int a = find_record(filename, workDirectory, &rec);
+    if(a == NO_PROBLEM_FOUND) {
+        return rec->current;
+    }
+    return  NULL;
 }
 
 int comparations(int first, int second, char *operand, char *result){
@@ -102,12 +106,10 @@ int readVarNum(char *word, essence *variables){
     return result;
 }
 
-void addLabel(essence *labels, char *word, int position, FILE *fin){
-    position += strlen(word)+1;
-    word[strlen(word) - 1] = '\0';
-    int label = addNewElement(word, labels);
-    labels->essenceValues[label] = position;
-    fseek(fin, position, SEEK_SET);
+void addLabel(interpretator_state *state){
+    state->word[strlen(state->word) - 1] = 0;
+    int label = addNewElement(state->word, &state->labels);
+    state->labels.essenceValues[label] = state->position;
 }
 
 char nonSyscalls(interpretator_state *state){
@@ -137,7 +139,6 @@ char nonSyscalls(interpretator_state *state){
     }
     else if(state->word[strlen(state->word) - 1] == ':'){
         state->position += strlen(state->word)+1;
-        fseek(state->program, state->position, SEEK_SET);
         return executeNextCommand(state);
     }
     else{
@@ -203,7 +204,6 @@ char interpretateNextWord(interpretator_state *state) {
 			record* new_dir;
 			if(find_record(state->word, state->working_directory, &new_dir) == NO_PROBLEM_FOUND) {
 				if(new_dir->current->type == 'd') {
-					//free(state->working_directory);
 					state->working_directory = new_dir->current;
 				} else {
 					printf("%s is not a directory\n", state->word);
@@ -255,8 +255,7 @@ char goToLabel(interpretator_state *state){
     if(variableIndex == -1){
         return SHIT_HAPPENED;
     }
-    int position = state->labels.essenceValues[variableIndex];
-    fseek(state->program, position, SEEK_SET);
+    state->position = state->labels.essenceValues[variableIndex];
     return ALL_OK;
 }
 
@@ -275,18 +274,16 @@ char* getline_file(file* program, int *position) {
 }
 
 
-void fillLabels(file *fin, char *buffer, char *word, essence *labels){
+void fillLabels(interpretator_state *state){
     size_t len = 0;
-    while(1){
-        int position = 0;
-        //getline(&buffer, &len, fin);
-        buffer = getline_file(fin, &position);
-        buffer = strparse(word, buffer);
-        //printf("%s %s\n", buffer, word);
-        if(word[strlen(word) - 1] == ':'){
-            addLabel(labels, word, position, fin);
+    while(1) {
+        state->buffer = getline_file(state->program, &state->position);
+        //buffer = getline_file(fin, &position);
+        state->buffer = strparse(state->word, state->buffer);
+        if (state->word[strlen(state->word) - 1] == ':') {
+            addLabel(state);
         }
-        if(strcmp(word, "end") == 0){
+        if (strcmp(state->word, "end") == 0) {
             return;
         }
     }
@@ -307,7 +304,6 @@ char executeNextCommand(interpretator_state *state) {
         getline(&buffer, &len, stdin);
         state->position = ftell(stdin);
     } else{
-        printf("Time to read!\n");
         buffer = getline_file(state->program, &state->position);
     }
     state->buffer = buffer;
@@ -329,7 +325,7 @@ interpretator_state initInterpretator(char* filename, int pid, file *working_dir
         state.program = NULL;
     } else {
         state.program = initProc(filename, working_directory);
-        if (!state.program) {
+        if (state.program == NULL) {
             state.status = PROC_INCORRECT;
             return state;
         }
@@ -341,7 +337,6 @@ interpretator_state initInterpretator(char* filename, int pid, file *working_dir
     state.variables = essenceInit();
     state.labels = essenceInit();
     state.position = 0;
-    
     state.pid = pid;
     state.status = PROC_RUNNING;
     state.name = (char*)malloc(255);
@@ -353,7 +348,7 @@ interpretator_state initInterpretator(char* filename, int pid, file *working_dir
 		state.fds[1].events = POLLOUT;
 	} else {
 		strcpy(state.name, filename);
-		//fillLabels(state.program, state.buffer, state.word, &state.labels);
+		fillLabels(&state);
 		state.position = 0;
 	}
     return state;

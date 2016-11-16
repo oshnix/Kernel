@@ -43,6 +43,8 @@ typedef struct {
 
 interpretator_state initInterpretator(char* filename, int pid, file *workDirectory);
 
+void fillLabels(interpretator_state *state);
+
 int launchInterpretator(interpretator_state* state);
 
 #endif

@@ -26,6 +26,7 @@ void interrupt_handler(interpretator_state *state) {
 		} while(proc[proc_current].status == PROC_KILLED || proc[proc_current].status == PROC_STOPPED);
 		scheduler_flag = false;
 		current_state = &proc[proc_current];
+        //printf("Switching to %i\n", proc_current);
 	}
 	if(term_flag) {
 		term_flag = false;
@@ -76,6 +77,16 @@ int main() {
 	file* home = init_file_system();
 	char inputBody[] = "jobs\nend";
 	file *input = new_file(*(record**)home->content, "input", '-', sizeof("input"));
+    char inpBody1[] = "X = 100\n"
+            "Y = 1\n"
+            "loop: Y = Y * X\n"
+            "    X = X - 1\n"
+            "if X >= 1 goto loop\n"
+            "goto loop\n"
+            "print y\n"
+            "      end";
+    file *inp1 = new_file(*(record**)home->content, "input1", "-", sizeof("input1"));
+    add_content(inp1, inpBody1, sizeof(inpBody1));
 	add_content(input, inputBody, sizeof(inputBody));
 	
 	for(size_t i = 0; i < 256; i++) {
