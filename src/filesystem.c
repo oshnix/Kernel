@@ -153,9 +153,9 @@ char list_directory_content(file *directory, FILE *fout){
     }
     else{
         record *records_list = *(record**)directory->content;
-        printf("Files in directory: %s\n", records_list[0].current->name);
+        printf("Type\tSize\tFilename\n");
         do{
-            fprintf(fout, "%c %ld %s\n", records_list->current->type, records_list->current->fileSize, records_list->current->name);
+            fprintf(fout, "%c\t%ld\t%s\n", records_list->current->type, records_list->current->fileSize, records_list->current->name);
             records_list = records_list->next;
         }while(records_list != NULL);
         return NO_PROBLEM_FOUND;
@@ -327,37 +327,4 @@ char move_file(char *res, char *dest, file *current_directory){
     } else{
         return INVALID_FILE_NAME;
     }
-    /*
-    record *res_file, *dest_file;
-    if(strcmp("..", dest) == 0){
-        des_set = 1;
-        record *temp = *(record**)(current_directory->content);
-        dest_file = temp->previous;
-    }
-    do{
-        if(!res_set && strcmp(res, record_list->current->name) == 0){
-            res_set = 1;
-            res_file = record_list;
-        }
-        if(!des_set && strcmp(dest, record_list->current->name) == 0){
-            des_set = 1;
-            dest_file = record_list;
-        }
-        if(des_set && res_set){
-            break;
-        }
-        record_list = record_list->next;
-    }while(record_list != NULL);
-    if(dest_file->current->type == 'd' && dest_file != res_file && res_file->current != current_directory){
-        add_simple_record(last_record(*(record**)dest_file->current->content), res_file->current);
-        cut_record(res_file);
-        return NO_PROBLEM_FOUND;
-
-    } else if(!res_set && !des_set){
-        return FILENAME_NOT_FOUND;
-    }
-    else{
-        return IS_NOT_A_DIRECTORY;
-    }
-        */
 }
