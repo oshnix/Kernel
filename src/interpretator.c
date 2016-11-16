@@ -32,7 +32,7 @@ char* strparse(char *dest, char *res){
     static const char delims[] = {' ', '\t', '\n', '\0'};
     int i, count = sizeof(delims);
     char state = 1;
-    while(*(res) == ' ' || *(res) == '\t') ++res;
+    while((*res) == ' ' || (*res) == '\t') ++res;
     while(state){
         *(dest++) = *(res++);
         for (i = 0; i < count; i++) {
@@ -173,7 +173,7 @@ char interpretateNextWord(interpretator_state *state) {
 			state->buffer = strparse(state->word, state->buffer);
 			file* file_cat;
 			record *found_rec;
-			char error_code = find_record(&state->word, state->working_directory, &found_rec);
+			error_code = find_record(&state->word, state->working_directory, &found_rec);
 			if(error_code == FILE_ALLREADY_EXISTS){
 				if(found_rec->current->type == '-'){
 					file_cat = found_rec->current;
@@ -233,6 +233,7 @@ char interpretateNextWord(interpretator_state *state) {
             switch (error_code){
                 case NO_PROBLEM_FOUND:
                     state->working_directory = new_dir;
+                    free(work_dir);
                     work_dir = print_working_directory(state->working_directory);
                     break;
                 case IS_NOT_A_DIRECTORY:
@@ -259,6 +260,14 @@ char interpretateNextWord(interpretator_state *state) {
             error_code = remove_file(state->word, state->working_directory);
             if(error_code != NO_PROBLEM_FOUND){
                 printf("Some problem found\n");
+            }
+            return ALL_OK;
+        }else if (strcmp(state->word, "echo") == 0) {
+            state->buffer = strparse(state->word, state->buffer);
+            record *found_rec;
+            error_code = find_record(&state->word, state->working_directory, &found_rec);
+            if(error_code == FILE_ALLREADY_EXISTS && found_rec->current->type == '-' && found_rec->current->content != NULL){
+                printf("%s:\n%s\n", found_rec->current->name, (char*)found_rec->current->content);
             }
             return ALL_OK;
         }/*else if (strcmp(state->word, "mv") == 0) {
@@ -360,6 +369,9 @@ char executeNextCommand(interpretator_state *state) {
     state->buffer = buffer;
     state->buffer = strparse(state->word, state->buffer);
     char ret = interpretateNextWord(state);
+    if(ret == SHIT_HAPPENED && state->pid == 0){
+        printf("some shit happened\n");
+    }
     if(state->pid == 0 && proc_foreground == state->pid) {
         printf("sh %s> ", work_dir);
 		fflush(stdout);

@@ -53,7 +53,6 @@ void add_simple_record(record *previous, file *child){
     temp->current = child;
     temp->next = NULL;
     previous->next = temp;
-    ++previous->current->fileSize;
 }//approved
 
 void add_catatlog_record(record *parent_directory_record, file *new_directory){
@@ -74,15 +73,18 @@ void add_catatlog_record(record *parent_directory_record, file *new_directory){
 
 
 char new_file(file *current_directory, char *filename, char type, file **created_file){
+    if(!*filename || *filename == '\n') {
+        return INVALID_FILE_NAME;
+    }
     record *record_to_find;
     char error_code;
     if(current_directory != NULL){
         error_code = find_record(&filename, current_directory, &record_to_find);
-        if(error_code != FILENAME_NOT_FOUND){
+        if(error_code != FILENAME_NOT_FOUND) {
             return error_code;
         }
+        current_directory = record_to_find->current;
     } else{
-
         record_to_find = NULL;
     }
     if(!*filename){
@@ -91,9 +93,8 @@ char new_file(file *current_directory, char *filename, char type, file **created
     *created_file = malloc(sizeof(file));
     (*created_file)->inode = maximumInode;
     ++maximumInode;
-    size_t name_len = strlen(filename);
-    (*created_file)->name = malloc(sizeof(char) *(name_len + 1));
-    strncpy((*created_file)->name, filename, name_len);
+    (*created_file)->name = malloc(sizeof(char) *(strlen(filename) + 1));
+    strcpy((*created_file)->name, filename);
     (*created_file)->type = type;
     (*created_file)->fileSize = 0;
     (*created_file)->content = NULL;
@@ -102,6 +103,7 @@ char new_file(file *current_directory, char *filename, char type, file **created
     }
     if(current_directory != NULL){
         add_simple_record(last_record(record_to_find), *created_file);
+        ++current_directory->fileSize;
     }
     return NO_PROBLEM_FOUND;
 }//approved
@@ -132,7 +134,7 @@ char* print_working_directory(file *working_directory){
     char *path_to_directory = NULL;
     int a = 0;
     path_to_directory = previous_level(*(record**)(working_directory->content), &a, path_to_directory);
-    *(path_to_directory+1) = '\0';
+    *(path_to_directory) = '\0';
     path_to_directory -= a+1;
     return path_to_directory;
 }
@@ -181,6 +183,15 @@ char list_directory_content(file *directory, FILE *fout){
  * возвращается код ошибки IS_NOT_A_DIRECTORY
  * (не должно происходить при корректной работе)
  */
+
+file *get_file_parent(record *current_file){
+    while(!(current_file->current->type == 'd' && (*(record**)current_file->current->content == current_file))){
+        current_file = current_file->previous;
+    }
+    return current_file->current;
+}
+
+
 
 char find_record(char **filename, file *current_directory, record **record_pointer){
     char *word = malloc(52 * sizeof(char));
@@ -248,13 +259,28 @@ char remove_file(char *filename, file *current_directory){
     record *found_file;
     char err_code = find_record(&filename, current_directory, &found_file);
     if(err_code == FILE_ALLREADY_EXISTS){
+        current_directory = get_file_parent(found_file);
         if(found_file->current->type == '-'){
+            free(found_file->current->name);
             free(found_file->current);
             cut_record(found_file);
+            --current_directory->fileSize;
             return NO_PROBLEM_FOUND;
         }
         else{
-            return IS_NOT_A_REGULAR_FILE;
+            if(found_file->current->fileSize == 1 && found_file->current->name[0] != '/'){
+                free(found_file->current->name);
+                free(*(record**)(found_file->current->content));
+                free(found_file->current->content);
+                free(found_file->current);
+                cut_record(found_file);
+                --current_directory->fileSize;
+                return NO_PROBLEM_FOUND;
+            }
+            else{
+                return DIRECTORY_NOT_EMPTY;
+            }
+
         }
     }
     else{
