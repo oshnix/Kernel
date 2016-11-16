@@ -53,7 +53,6 @@ void add_simple_record(record *previous, file *child){
     temp->current = child;
     temp->next = NULL;
     previous->next = temp;
-    ++previous->current->fileSize;
 }//approved
 
 void add_catatlog_record(record *parent_directory_record, file *new_directory){
@@ -74,15 +73,18 @@ void add_catatlog_record(record *parent_directory_record, file *new_directory){
 
 
 char new_file(file *current_directory, char *filename, char type, file **created_file){
+    if(!*filename || *filename == '\n') {
+        return INVALID_FILE_NAME;
+    }
     record *record_to_find;
     char error_code;
     if(current_directory != NULL){
         error_code = find_record(&filename, current_directory, &record_to_find);
-        if(error_code != FILENAME_NOT_FOUND){
+        if(error_code != FILENAME_NOT_FOUND) {
             return error_code;
         }
+        current_directory = record_to_find->current;
     } else{
-
         record_to_find = NULL;
     }
     if(!*filename){
@@ -91,9 +93,8 @@ char new_file(file *current_directory, char *filename, char type, file **created
     *created_file = malloc(sizeof(file));
     (*created_file)->inode = maximumInode;
     ++maximumInode;
-    size_t name_len = strlen(filename);
-    (*created_file)->name = malloc(sizeof(char) *(name_len + 1));
-    strncpy((*created_file)->name, filename, name_len);
+    (*created_file)->name = malloc(sizeof(char) *(strlen(filename) + 1));
+    strcpy((*created_file)->name, filename);
     (*created_file)->type = type;
     (*created_file)->fileSize = 0;
     (*created_file)->content = NULL;
@@ -102,6 +103,7 @@ char new_file(file *current_directory, char *filename, char type, file **created
     }
     if(current_directory != NULL){
         add_simple_record(last_record(record_to_find), *created_file);
+        ++current_directory->fileSize;
     }
     return NO_PROBLEM_FOUND;
 }//approved
@@ -132,7 +134,7 @@ char* print_working_directory(file *working_directory){
     char *path_to_directory = NULL;
     int a = 0;
     path_to_directory = previous_level(*(record**)(working_directory->content), &a, path_to_directory);
-    *(path_to_directory+1) = '\0';
+    *(path_to_directory) = '\0';
     path_to_directory -= a+1;
     return path_to_directory;
 }
@@ -151,9 +153,9 @@ char list_directory_content(file *directory, FILE *fout){
     }
     else{
         record *records_list = *(record**)directory->content;
-        printf("Files in directory: %s\n", records_list[0].current->name);
+        printf("Type\tSize\tFilename\n");
         do{
-            fprintf(fout, "%c %ld %s\n", records_list->current->type, records_list->current->fileSize, records_list->current->name);
+            fprintf(fout, "%c\t%ld\t%s\n", records_list->current->type, records_list->current->fileSize, records_list->current->name);
             records_list = records_list->next;
         }while(records_list != NULL);
         return NO_PROBLEM_FOUND;
@@ -181,6 +183,15 @@ char list_directory_content(file *directory, FILE *fout){
  * возвращается код ошибки IS_NOT_A_DIRECTORY
  * (не должно происходить при корректной работе)
  */
+
+file *get_file_parent(record *current_file){
+    while(!(current_file->current->type == 'd' && (*(record**)current_file->current->content == current_file))){
+        current_file = current_file->previous;
+    }
+    return current_file->current;
+}
+
+
 
 char find_record(char **filename, file *current_directory, record **record_pointer){
     char *word = malloc(52 * sizeof(char));
@@ -245,21 +256,36 @@ void cut_record(record *record_to_delete){
 }//approved
 
 char remove_file(char *filename, file *current_directory){
-    record *record_list = *(record**)current_directory->content;
-    do{
-        if(strcmp(record_list->current->name,filename) == 0 ){
-            if(record_list->previous != NULL){
-                free(record_list->current);
-                cut_record(record_list);
+    record *found_file;
+    char err_code = find_record(&filename, current_directory, &found_file);
+    if(err_code == FILE_ALLREADY_EXISTS){
+        current_directory = get_file_parent(found_file);
+        if(found_file->current->type == '-'){
+            free(found_file->current->name);
+            free(found_file->current);
+            cut_record(found_file);
+            --current_directory->fileSize;
+            return NO_PROBLEM_FOUND;
+        }
+        else{
+            if(found_file->current->fileSize == 1 && found_file->current->name[0] != '/'){
+                free(found_file->current->name);
+                free(*(record**)(found_file->current->content));
+                free(found_file->current->content);
+                free(found_file->current);
+                cut_record(found_file);
+                --current_directory->fileSize;
                 return NO_PROBLEM_FOUND;
             }
             else{
-                return CANNOT_REMOVE_DIRECTORY;
+                return DIRECTORY_NOT_EMPTY;
             }
+
         }
-        record_list = record_list->next;
-    }while(record_list != NULL);
-    return FILENAME_NOT_FOUND;
+    }
+    else{
+        return err_code;
+    }
 }//need to check it
 
 
@@ -279,37 +305,26 @@ char navigate(char *filename, file *current_directory, file ** file_pointer){
 }//approved
 
 char move_file(char *res, char *dest, file *current_directory){
-    record *record_list = *(record**)current_directory->content;
-    char res_set = 0, des_set = 0;
-    record *res_file, *dest_file;
-    if(strcmp("..", dest) == 0){
-        des_set = 1;
-        record *temp = *(record**)(current_directory->content);
-        dest_file = temp->previous;
+    record *record_dest, *record_res;
+    char error_code = find_record(&res, current_directory, &record_res);
+    if(error_code != FILE_ALLREADY_EXISTS){
+        printf("First cannot be found. WTF?\n");
+        return error_code;
     }
-    do{
-        if(!res_set && strcmp(res, record_list->current->name) == 0){
-            res_set = 1;
-            res_file = record_list;
-        }
-        if(!des_set && strcmp(dest, record_list->current->name) == 0){
-            des_set = 1;
-            dest_file = record_list;
-        }
-        if(des_set && res_set){
-            break;
-        }
-        record_list = record_list->next;
-    }while(record_list != NULL);
-    if(dest_file->current->type == 'd' && dest_file != res_file && res_file->current != current_directory){
-        add_simple_record(last_record(*(record**)dest_file->current->content), res_file->current);
-        cut_record(res_file);
-        return NO_PROBLEM_FOUND;
+    error_code = find_record(&dest, current_directory, &record_dest);
+    if(error_code != FILE_ALLREADY_EXISTS){
+        printf("Second cannot be found. WTF?\n");
+        return error_code;
+    }
+    current_directory = get_file_parent(record_res);
 
-    } else if(!res_set && !des_set){
-        return FILENAME_NOT_FOUND;
-    }
-    else{
-        return IS_NOT_A_DIRECTORY;
+    if(record_dest->current != record_res->current && record_dest->current->type == 'd' && record_res->current != get_file_parent(record_dest)){
+        --(current_directory->fileSize);
+        add_simple_record(last_record(*(record**)record_dest->current->content), record_res->current);
+        cut_record(record_res);
+        ++(record_dest->current->fileSize);
+        return NO_PROBLEM_FOUND;
+    } else{
+        return INVALID_FILE_NAME;
     }
 }

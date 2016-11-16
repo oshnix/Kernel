@@ -78,26 +78,22 @@ int main() {
 	timer.it_interval.tv_sec = 0;
 	timer.it_interval.tv_usec = 250000;
 	file* home = init_file_system();
-	char inputBody[] = "jobs\nend";
-	file *input;
-	new_file(home, "input", '-', &input);
-    char inpBody1[] = "X = 100\n"
+    char inpBody[] = "X = 100\n"
             "Y = 1\n"
             "loop: Y = Y * X\n"
-            "    X = X - 1\n"
+            "X = X - 1\n"
             "if X >= 1 goto loop\n"
             "goto loop\n"
             "print y\n"
-            "      end";
-	file *inp1;
-    new_file(home, "input1", '-', &inp1);
-	rewrite_file(inp1, inpBody1, sizeof(inpBody1));
-	add_content(input, inputBody, sizeof(inputBody));
+            "end";
+	file *inp;
+    new_file(home, "input", '-', &inp);
+	rewrite_file(inp, inpBody, sizeof(inpBody));
 	for(size_t i = 0; i < 256; i++) {
 		proc[i].status = PROC_KILLED;
 	}
     work_dir = print_working_directory(home);
-	syscalls_exec(NULL, home);
+	syscalls_exec("shell", home);
 	current_state = &proc[0];
 
 	printf("sh %s> ", work_dir);
