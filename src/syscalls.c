@@ -7,8 +7,9 @@
 
 extern size_t proc_count;
 extern interpretator_state proc[256];
-extern scheduler_flag;
-extern proc_foreground;
+extern int scheduler_flag;
+extern char *work_dir;
+extern size_t proc_foreground;
 
 void interrupt_handler(interpretator_state*);
 
@@ -35,11 +36,11 @@ void syscalls_jobs() {
 	}
 }
 
-void syscalls_lstat(){
-	printFileInfo(stdout, listDirectoryContent(workingDirectory));
+void syscalls_lstat(file* working_directory){
+	list_directory_content(working_directory, stdout);
 }
 
-void syscalls_exec(char* name) {
+void syscalls_exec(char* name, file* working_directory) {
 	int pid = 0;
 	for(int i = 0; i < 256; i++) {
 		if(proc[i].status == PROC_KILLED) {
@@ -47,15 +48,15 @@ void syscalls_exec(char* name) {
 			break;
 		}
 	}
-    printf("Syscall exec pid: %i\n", pid);
-	proc[pid] = initInterpretator(name, pid);
-
+	proc[pid] = initInterpretator(name, pid, working_directory);
 	if(proc[pid].status == PROC_INCORRECT) {
 		//syscalls_kill(pid);
-		proc[pid].status = PROC_INCORRECT;
+        printf("proc[%i] incorrect\n", pid);
+		proc[pid].status = PROC_KILLED;
 		printf("sh: file %s not exists\n", name);
 	} else {
 		proc_count++;
+        printf("proc[%i] inited\n", pid);
 	}
 }
 
@@ -76,6 +77,9 @@ int syscalls_kill(int pid) {
 	if(proc[pid].status == PROC_KILLED) {
 		return 1;
 	}
+	if(proc_count == 0 || pid == 0) {
+		exit(0);
+	}
 	if(proc[pid].program) {
 		free(proc[pid].name);
 		free(proc[pid].variables.essenceValues);
@@ -83,13 +87,10 @@ int syscalls_kill(int pid) {
 			free(proc[pid].variables.essenceNames[i]);
 		}
 		free(proc[pid].variables.essenceNames);
-		fclose(proc[pid].program);
+		//free(proc[pid].program);
 	}
 	proc[pid].status = PROC_KILLED;
 	proc_count--;
-	if(proc_count == 0 || pid == 0) {
-		exit(0);
-	}
 	return 0;
 }
 

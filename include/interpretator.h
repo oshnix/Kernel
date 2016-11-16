@@ -6,7 +6,7 @@
 #include <sys/poll.h>
 
 #define START_ESSENCE_SIZE 8
-#define ESSENCE_NAME_SIZE 50
+#define ESSENCE_NAME_SIZE 500
 #define SIZE_OF_OPERATION 3
 #define OPERAND_MAX_SIZE 6
 
@@ -33,6 +33,7 @@ typedef struct {
 	essence variables;
 	essence labels;
 	int position;
+	file* working_directory;
 	// proc
 	int pid;
 	proc_status status;
@@ -40,7 +41,9 @@ typedef struct {
 	struct pollfd fds[2];
 } interpretator_state;
 
-interpretator_state initInterpretator(char* file, int pid);
+interpretator_state initInterpretator(char* filename, int pid, file *workDirectory);
+
+void fillLabels(interpretator_state *state);
 
 int launchInterpretator(interpretator_state* state);
 

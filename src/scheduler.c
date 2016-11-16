@@ -9,17 +9,16 @@
 #include "interpretator.h"
 #include "syscalls.h"
 
-volatile sig_atomic_t scheduler_flag = false;
-volatile sig_atomic_t term_flag = false;
-volatile sig_atomic_t stop_flag = false;
+volatile int scheduler_flag = false;
+volatile int term_flag = false;
+volatile int stop_flag = false;
 
 interpretator_state* current_state;
 interpretator_state proc[256];
+char *work_dir;
 size_t proc_count = 0;
 size_t proc_current = 0;
 size_t proc_foreground = 0;
-
-file *workingDirectory;
 
 void interrupt_handler(interpretator_state *state) {
 	if(scheduler_flag) {
@@ -28,6 +27,7 @@ void interrupt_handler(interpretator_state *state) {
 		} while(proc[proc_current].status == PROC_KILLED || proc[proc_current].status == PROC_STOPPED);
 		scheduler_flag = false;
 		current_state = &proc[proc_current];
+        //printf("Switching to %i\n", proc_current);
 	}
 	if(term_flag) {
 		term_flag = false;
@@ -38,11 +38,13 @@ void interrupt_handler(interpretator_state *state) {
 	}
 	if(stop_flag) {
 		stop_flag = false;
-		proc[proc_foreground].status = PROC_STOPPED;
-		printf("[%li] Stopped\n", proc_foreground);
-		printf("sh > ");
-		fflush(stdout);
-		proc_foreground = 0;
+        if(proc_foreground != 0) {
+            proc[proc_foreground].status = PROC_STOPPED;
+            printf("[%li] Stopped\n", proc_foreground);
+            printf("sh > ");
+            fflush(stdout);
+            proc_foreground = 0;
+        }
 	}
 }
 
@@ -75,26 +77,33 @@ int main() {
 	/* ... and every 250 msec after that. */
 	timer.it_interval.tv_sec = 0;
 	timer.it_interval.tv_usec = 250000;
-	workingDirectory = initFileSystem();
+	file* home = init_file_system();
 	char inputBody[] = "jobs\nend";
-	file *input = newFile(workingDirectory, "input", '-', lastRecord(workingDirectory));
-	addContent(input, inputBody, sizeof(inputBody));
-	
+	file *input;
+	new_file(home, "input", '-', &input);
+    char inpBody1[] = "X = 100\n"
+            "Y = 1\n"
+            "loop: Y = Y * X\n"
+            "    X = X - 1\n"
+            "if X >= 1 goto loop\n"
+            "goto loop\n"
+            "print y\n"
+            "      end";
+	file *inp1;
+    new_file(home, "input1", '-', &inp1);
+	rewrite_file(inp1, inpBody1, sizeof(inpBody1));
+	add_content(input, inputBody, sizeof(inputBody));
 	for(size_t i = 0; i < 256; i++) {
 		proc[i].status = PROC_KILLED;
 	}
-	
-	syscalls_exec(NULL);
+    work_dir = print_working_directory(home);
+	syscalls_exec(NULL, home);
 	current_state = &proc[0];
 
-
-
-
-	printf("sh > ");
+	printf("sh %s> ", work_dir);
 	fflush(stdout);
 	setitimer (ITIMER_PROF, &timer, NULL);
 	while(proc_count)
 		launchInterpretator(current_state);
-	
 	return 0;
 }
