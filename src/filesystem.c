@@ -24,7 +24,17 @@ char *parse_string(const char delim, char *src, char *dest){
         *(dest++) = *(src++);
     *dest = '\0';
     return src;
-}//do we need two realisations?
+} //do we really need two realisations?!?
+
+/*
+ * Две реализации - убрать, если нужно будет использовать код где-то
+ */
+
+char *parser_without_terminator(const char delim, char *src, char *dest){
+    while(*(src) != delim && *src != 0)
+        *(dest++) = *(src++);
+    return dest;
+} //do we really need two realisations?!?
 
 
 /*
@@ -102,15 +112,29 @@ char new_file(file *current_directory, char *filename, char type, file **created
  * 3 - поиск уже существующих файлов\записей
  */
 
-/*
+char *previous_level(record *current_dir, int *length, char *string){
+    current_dir = *(record**)(current_dir->current)->content;
+    if(current_dir->current->name[0] != '/'){
+        *length += strlen(current_dir->current->name);
+        string = previous_level(current_dir->previous, length, string);
+    } else{
+        string = malloc(sizeof(char)*(*length + 2));
+        *(string++) = '/';
+        return string;
+    }
+    string = parser_without_terminator(directory_delim, current_dir->current->name, string);
+    return string;
+
+}
 
 char* print_working_directory(file *working_directory){
-    char *path_to_directory;
-    while(working_directory->name != '/'){
-
-    }
+    char *path_to_directory = NULL;
+    int a = 0;
+    path_to_directory = previous_level(*(record**)(working_directory->content), &a, path_to_directory);
+    *(path_to_directory+1) = '\0';
+    path_to_directory -= a+1;
+    return path_to_directory;
 }
-*/
 
 
 record* last_record(record *current_record) {

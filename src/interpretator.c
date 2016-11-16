@@ -227,7 +227,11 @@ char interpretateNextWord(interpretator_state *state) {
 			state->buffer = strparse(state->word, state->buffer);
             error_code = new_file(state->working_directory, state->word, '-', &buffer_file);
 			return ALL_OK;
-        } else if (strcmp(state->word, "exec") == 0) {
+        } else if (strcmp(state->word, "pwd") == 0) {
+            char *working_directory_path = print_working_directory(state->working_directory);
+            printf("Output: %s\n", working_directory_path);
+            return ALL_OK;
+        }else if (strcmp(state->word, "exec") == 0) {
 			state->buffer = strparse(state->word, state->buffer);
 			syscalls_exec(state->word, state->working_directory);
 			return ALL_OK;

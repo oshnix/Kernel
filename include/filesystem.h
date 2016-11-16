@@ -26,13 +26,11 @@ char *parse_string(const char delim, char *src, char *dest);
 
 file* init_file_system();
 
-void add_simple_record(record *previous, file *child);
-
-void add_catatlog_record(record *parent_directory_record, file *new_directory);
-
 char new_file(file *current_directory, char *filename, char type, file **created_file);
 
 //3
+
+char* print_working_directory(file *working_directory);
 
 record* last_record(record *current_record);
 
@@ -46,8 +44,6 @@ void rewrite_file(file *regularFile, char *content, size_t content_len);
 void add_content(file *regularFile, char *content, size_t content_len);
 
 //5
-
-void cutRecord(record *record_to_delete);
 
 char remove_file(char *filename, file *current_directory);
 
