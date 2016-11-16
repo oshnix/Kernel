@@ -78,7 +78,8 @@ int main() {
 	timer.it_interval.tv_usec = 250000;
 	file* home = init_file_system();
 	char inputBody[] = "jobs\nend";
-	file *input = new_file(*(record**)home->content, "input", '-', sizeof("input"));
+	file *input;
+	new_file(home, "input", '-', &input);
     char inpBody1[] = "X = 100\n"
             "Y = 1\n"
             "loop: Y = Y * X\n"
@@ -87,19 +88,15 @@ int main() {
             "goto loop\n"
             "print y\n"
             "      end";
-    file *inp1 = new_file(*(record**)home->content, "input1", '-', sizeof("input1"));
+	file *inp1;
+    new_file(home, "input1", '-', &inp1);
     add_content(inp1, inpBody1, sizeof(inpBody1));
 	add_content(input, inputBody, sizeof(inputBody));
-	
 	for(size_t i = 0; i < 256; i++) {
 		proc[i].status = PROC_KILLED;
 	}
-	
 	syscalls_exec(NULL, home);
 	current_state = &proc[0];
-
-
-
 
 	printf("sh > ");
 	fflush(stdout);

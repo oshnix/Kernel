@@ -129,7 +129,6 @@ char find_record(char **filename, file *current_directory, record **record_point
     while(**filename){
         *filename = parse_string('\\', *filename, word);
         if(current_directory->type != 'd'){
-            free(word);
             return IS_NOT_A_DIRECTORY;
         }
         *record_pointer = *(record**)(current_directory->content);
@@ -143,7 +142,6 @@ char find_record(char **filename, file *current_directory, record **record_point
                 *record_pointer = (*record_pointer)->next;
             }
         }
-
         if(**filename) ++(*filename);
         if(state){
 
@@ -151,12 +149,10 @@ char find_record(char **filename, file *current_directory, record **record_point
                 *filename = word;
                 return FILENAME_NOT_FOUND;
             }
-            free(word);
             return NO_DIRECTORY_WITH_SUCH_NAME;
         }
         current_directory = (*record_pointer)->current;
     }
-    free(word);
     return FILE_ALLREADY_EXISTS;
 }//approved
 
@@ -259,6 +255,7 @@ char move_file(char *res, char *dest, file *current_directory){
     }
 }
 
+/*
 int main(){
     file *home = init_file_system();
     list_directory_content(home,stdout);
@@ -271,3 +268,4 @@ int main(){
 
     return 0;
 }
+ */

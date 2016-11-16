@@ -30,7 +30,6 @@ char new_file(file *current_directory, char *filename, char type, file **created
 
 char find_record(char **filename, file *current_directory, record **record_pointer);
 
-
 void rewrite_file(file *regularFile, char *content, size_t content_len);
 
 char list_directory_content(file *directory, FILE *fout);

@@ -48,8 +48,8 @@ char* strparse(char *dest, char *res){
 
 file* initProc(char* filename, file* workDirectory){
     record* rec;
-    int a = find_record(filename, workDirectory, &rec);
-    if(a == NO_PROBLEM_FOUND) {
+    int a = find_record(&filename, workDirectory, &rec);
+    if(a == FILE_ALLREADY_EXISTS) {
         return rec->current;
     }
     return  NULL;
@@ -150,9 +150,10 @@ char nonSyscalls(interpretator_state *state){
 
 char interpretateNextWord(interpretator_state *state) {
     int variableIndex;
-    char errorCode;
+    file *buffer_file;
+    char error_code;
     //printf("Working with: %s\n", state->buffer);
-    if (state->pid == 0 || -1 == (errorCode = nonSyscalls(state))) {
+    if (state->pid == 0 || -1 == (error_code = nonSyscalls(state))) {
         if (strcmp(state->word, "print") == 0) {
             state->buffer = strparse(state->word, state->buffer);
             variableIndex = isVariable(state->word, &state->variables);
@@ -201,24 +202,30 @@ char interpretateNextWord(interpretator_state *state) {
 			return ALL_OK;
         } else if (strcmp(state->word, "cd") == 0) {
 			state->buffer = strparse(state->word, state->buffer);
-			record* new_dir;
-			if(find_record(state->word, state->working_directory, &new_dir) == NO_PROBLEM_FOUND) {
-				if(new_dir->current->type == 'd') {
-					state->working_directory = new_dir->current;
-				} else {
-					printf("%s is not a directory\n", state->word);
-				}
-			} else {
-				printf("No such directory\n");
-			}
+			file* new_dir;
+            error_code = navigate(state->word, state->working_directory, &new_dir);
+            switch (error_code){
+                case NO_PROBLEM_FOUND:
+                    state->working_directory = new_dir;
+                    break;
+                case IS_NOT_A_DIRECTORY:
+                    printf("%s is not a directory\n", state->word);
+                    break;
+                case FILENAME_NOT_FOUND:
+                    printf("No such directory\n");
+                    break;
+                default:
+                    printf("Unknown error happened");
+                    break;
+            }
 			return ALL_OK;
         } else if (strcmp(state->word, "mkdir") == 0) {
 			state->buffer = strparse(state->word, state->buffer);
-			new_file(*(record**)(state->working_directory->content), state->word, 'd', strlen(state->word));
+            error_code = new_file(state->working_directory, state->word, 'd', &buffer_file);
 			return ALL_OK;
         } else if (strcmp(state->word, "touch") == 0) {
 			state->buffer = strparse(state->word, state->buffer);
-			new_file(*(record**)(state->working_directory->content), state->word, '-', strlen(state->word));
+            error_code = new_file(state->working_directory, state->word, 'd', &buffer_file);
 			return ALL_OK;
         } else if (strcmp(state->word, "exec") == 0) {
 			state->buffer = strparse(state->word, state->buffer);
@@ -246,7 +253,7 @@ char interpretateNextWord(interpretator_state *state) {
         }
         return SHIT_HAPPENED;
     }
-    return errorCode;
+    return error_code;
 }
 
 char goToLabel(interpretator_state *state){
@@ -357,20 +364,20 @@ interpretator_state initInterpretator(char* filename, int pid, file *working_dir
 }
 
 int launchInterpretator(interpretator_state *state) {
-	char errorCode;
+	char error_code;
 	if(state->status == PROC_KILLED) {
 		syscalls_yield(state);
 		printf("switch to dead process\n");
 		return 0;
 	}
     do {
-        errorCode = executeNextCommand(state);
-		if(errorCode == 2)
+        error_code = executeNextCommand(state);
+		if(error_code == 2)
 			scheduler_flag = true;
 		if(scheduler_flag) {
 			interrupt_handler(state);
-			return errorCode;
+			return error_code;
 		}
-	} while (errorCode);
-    return errorCode;
+	} while (error_code);
+    return error_code;
 }
