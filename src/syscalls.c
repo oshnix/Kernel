@@ -7,8 +7,8 @@
 
 extern size_t proc_count;
 extern interpretator_state proc[256];
-extern scheduler_flag;
-extern proc_foreground;
+extern int scheduler_flag;
+extern size_t proc_foreground;
 
 void interrupt_handler(interpretator_state*);
 

@@ -9,9 +9,9 @@
 #include "interpretator.h"
 #include "syscalls.h"
 
-volatile sig_atomic_t scheduler_flag = false;
-volatile sig_atomic_t term_flag = false;
-volatile sig_atomic_t stop_flag = false;
+volatile int scheduler_flag = false;
+volatile int term_flag = false;
+volatile int stop_flag = false;
 
 interpretator_state* current_state;
 interpretator_state proc[256];
@@ -37,11 +37,13 @@ void interrupt_handler(interpretator_state *state) {
 	}
 	if(stop_flag) {
 		stop_flag = false;
-		proc[proc_foreground].status = PROC_STOPPED;
-		printf("[%li] Stopped\n", proc_foreground);
-		printf("sh > ");
-		fflush(stdout);
-		proc_foreground = 0;
+        if(proc_foreground != 0) {
+            proc[proc_foreground].status = PROC_STOPPED;
+            printf("[%li] Stopped\n", proc_foreground);
+            printf("sh > ");
+            fflush(stdout);
+            proc_foreground = 0;
+        }
 	}
 }
 
@@ -85,7 +87,7 @@ int main() {
             "goto loop\n"
             "print y\n"
             "      end";
-    file *inp1 = new_file(*(record**)home->content, "input1", "-", sizeof("input1"));
+    file *inp1 = new_file(*(record**)home->content, "input1", '-', sizeof("input1"));
     add_content(inp1, inpBody1, sizeof(inpBody1));
 	add_content(input, inputBody, sizeof(inputBody));
 	

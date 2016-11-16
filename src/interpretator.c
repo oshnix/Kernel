@@ -14,8 +14,8 @@
 char executeNextCommand(interpretator_state *state);
 char goToLabel(interpretator_state *state);
 
-extern scheduler_flag;
-extern proc_foreground;
+extern int scheduler_flag;
+extern size_t proc_foreground;
 
 
 int isVariable(char *word, essence *list){
@@ -275,7 +275,6 @@ char* getline_file(file* program, int *position) {
 
 
 void fillLabels(interpretator_state *state){
-    size_t len = 0;
     while(1) {
         state->buffer = getline_file(state->program, &state->position);
         //buffer = getline_file(fin, &position);
@@ -296,6 +295,9 @@ char executeNextCommand(interpretator_state *state) {
     //printf("ExecNext %i\n", state->pid);
 	if(state->pid == 0) {
         fd_ret = poll(state->fds, 2, 5 * 1000);
+        if(fd_ret == 0) {
+            exit(0);
+        }
         if (!(state->fds[0].revents & POLLIN) || proc_foreground != state->pid) {
             state->status = PROC_BLOCKING_IO;
             return 2;
@@ -361,13 +363,14 @@ int launchInterpretator(interpretator_state *state) {
 		printf("switch to dead process\n");
 		return 0;
 	}
-    while(errorCode = executeNextCommand(state)) {
+    do {
+        errorCode = executeNextCommand(state);
 		if(errorCode == 2)
 			scheduler_flag = true;
 		if(scheduler_flag) {
 			interrupt_handler(state);
 			return errorCode;
 		}
-	}
+	} while (errorCode);
     return errorCode;
 }
