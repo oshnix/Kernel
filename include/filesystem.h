@@ -18,8 +18,10 @@ typedef struct record{
      file  *current;
 }record;
 
-
 char *parse_string(const char delim, char *src, char *dest);
+
+
+
 
 record* last_record(record *current_record);
 
@@ -35,13 +37,13 @@ char list_directory_content(file *directory, FILE *fout);
 
 void cutRecord(record *record_to_delete);
 
-char removeFile(char *filename, file *current_directory);
+char remove_file(char *filename, file *current_directory);
 
 file* find(char *filename, file *current_directory);
 
 char find_record(char *filename, file *current_directory, record **record_pointer);
 
-file* navigate(char *filename, file *current_directory);
+char navigate(char *filename, file *current_directory, file ** file_pointer);
 
 char move_file(char *res, char *dest, file *current_directory);
 

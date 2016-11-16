@@ -8,19 +8,26 @@
 
 int maximumInode = 0;
 
+/*
+ * 1 - вспомогательные функции
+ */
+
+/*
+ * @DESCRIPTION: на вход подаётся разделитель, исходная строка и буфер
+ * Копирует в буфер нуль-терминированный кусок строки - часть исходной до разделителя.
+ */
 char *parse_string(const char delim, char *src, char *dest){
     while(*(src) != delim && *src != 0)
         *(dest++) = *(src++);
     *dest = '\0';
     return src;
-}
+}//do we need two realisations?
 
-record* last_record(record *current_record) {
-    while (current_record->next != NULL) {
-        current_record = current_record->next;
-    }
-    return current_record;
-}//approved
+
+/*
+ * 2 - добавление новых файлов в ФС.
+ */
+
 
 
 void add_simple_record(record *previous, file *child){
@@ -42,6 +49,12 @@ void add_catatlog_record(record *parent_directory_record, file *new_directory){
     ++new_directory_record->current->fileSize;
 }//approved
 
+/*
+ * @DESCRIPTION: на вход подаётся запись - '.' - информация о текущем каталоге
+ * имя файла, которое мы хотим создать, тип файла и 
+ */
+
+
 file* new_file(record *currentCatalogRecord, char *filename, char type, size_t filename_length ){
     file *new_file = malloc(sizeof(file));
     new_file->inode = maximumInode;
@@ -51,22 +64,32 @@ file* new_file(record *currentCatalogRecord, char *filename, char type, size_t f
     new_file->type = type;
     new_file->fileSize = 0;
     new_file->content = NULL;
-    if(currentCatalogRecord == NULL){
+    if(type == 'd'){
         add_catatlog_record(currentCatalogRecord, new_file);
-    } else{
-        if(type == 'd'){
-            add_catatlog_record(currentCatalogRecord, new_file);
-        }
+    }
+    if(currentCatalogRecord != NULL){
         add_simple_record(last_record(currentCatalogRecord), new_file);
     }
     return new_file;
 }//approved
 
+
+
+record* last_record(record *current_record) {
+    while (current_record->next != NULL) {
+        current_record = current_record->next;
+    }
+    return current_record;
+}//approved
+
+
+
+
 void rewrite_file(file *regular_file, char *content, size_t content_len){
     regular_file->content = malloc(content_len+1);
     strncpy((char*)regular_file->content, content, content_len);
     regular_file->fileSize = content_len;
-}
+}//need to check it
 
 char list_directory_content(file *directory, FILE *fout){
     if(directory->type != 'd'){
@@ -76,8 +99,7 @@ char list_directory_content(file *directory, FILE *fout){
         record *records_list = *(record**)directory->content;
         printf("Files in directory: %s\n", records_list[0].current->name);
         do{
-            //fprintf(fout, "\t%s: %d %c %d\n", records_list->current->name, records_list->current->inode, records_list->current->type, records_list->current->fileSize);
-            fprintf(fout, "%c %i %s\n", records_list->current->type, records_list->current->fileSize, records_list->current->name);
+            fprintf(fout, "%c %ld %s\n", records_list->current->type, records_list->current->fileSize, records_list->current->name);
             records_list = records_list->next;
         }while(records_list != NULL);
         return NO_PROBLEM_FOUND;
@@ -95,7 +117,7 @@ void cut_record(record *record_to_delete){
     free(record_to_delete);
 }//approved
 
-char removeFile(char *filename, file *current_directory){
+char remove_file(char *filename, file *current_directory){
     record *record_list = *(record**)current_directory->content;
     do{
         if(strcmp(record_list->current->name,filename) == 0 ){
@@ -111,22 +133,7 @@ char removeFile(char *filename, file *current_directory){
         record_list = record_list->next;
     }while(record_list != NULL);
     return FILE_NOT_FOUND;
-}
-
-file* find(char *filename, file *current_directory){
-    if(strcmp(".." , filename) == 0){
-        record *temp = *((record**)(current_directory->content));
-        return temp->previous->current;
-    }
-    record *record_list = *(record**)current_directory->content;
-    while(record_list != NULL){
-        if(strcmp(filename, record_list->current->name) == 0){
-            return record_list->current;
-        }
-        record_list = record_list->next;
-    }
-    return FILE_NOT_FOUND;
-}
+}//need to check it
 
 char find_record(char *filename, file *current_directory, record **record_pointer){
     char *word = malloc(52 * sizeof(char));
@@ -153,17 +160,24 @@ char find_record(char *filename, file *current_directory, record **record_pointe
         if(*filename) ++filename;
         current_directory = (*record_pointer)->current;
     }
-    return NO_PROBLEM_FOUND;
-}
 
-file* navigate(char *filename, file *current_directory){
-    file *temp = find(filename, current_directory);
-    if(temp->type != 'd'){
-        return IS_NOT_A_DIRECTORY;
+    return NO_PROBLEM_FOUND;
+}//approved
+
+char navigate(char *filename, file *current_directory, file ** file_pointer){
+    record *found_rec;
+    char error_code = find_record(filename, current_directory, &found_rec);
+    if(error_code == NO_PROBLEM_FOUND){
+        if(found_rec->current->type == 'd'){
+            *file_pointer = found_rec->current;
+            return NO_PROBLEM_FOUND;
+        } else {
+            return IS_NOT_A_DIRECTORY;
+        }
     } else{
-        return temp;
+        return FILE_NOT_FOUND;
     }
-}
+}//approved
 
 char move_file(char *res, char *dest, file *current_directory){
     record *record_list = *(record**)current_directory->content;
@@ -199,53 +213,15 @@ char move_file(char *res, char *dest, file *current_directory){
     else{
         return WRONG_ACTION;
     }
-
 }
 
 void add_content(file *regular_file, char *content, size_t content_len){
     regular_file->content = realloc(regular_file->content, regular_file->fileSize + content_len + 1);
-    strncpy((char*)(regular_file->content + regular_file->fileSize), content, content_len);
+    strncpy((char*)((record*)(regular_file->content) + regular_file->fileSize), content, content_len);
     regular_file->fileSize = regular_file->fileSize + content_len;
 }
-
 
 file* init_file_system(){
     file *home = new_file(NULL, "/", 'd', 1);
     return home;
 }
-
-/*
-int main(){
-    file *home = init_file_system();
-    file *working_directory = home;
-    file *res = new_file(*(record**)working_directory->content, "res", 'd', 3);
-    new_file(*(record**)working_directory->content, "profile", '-', sizeof("profile"));
-    file* kill = new_file(*(record**)res->content, "kill", 'd', 4);
-    file *mad = new_file(*(record**)kill->content, "mad", 'd', 3);
-    record *down_record;
-    int a = find_record("..\\..\\gav\\profile\\massaracsh", mad, &down_record);
-    if(a == NO_PROBLEM_FOUND){
-        printf("File info: %s %d\n", down_record->current->name, down_record->current->inode);
-    }
-    else{
-        printf("Some shit happened\n");
-    }
-
-
-    list_directory_content(working_directory, stdout);
-    working_directory = navigate("res", home);
-    list_directory_content(working_directory, stdout);
-    new_file(*(record**)working_directory->content, "kill", 'd');
-    list_directory_content(working_directory, stdout);
-    reWriteContent(profile, hello, sizeof(hello));
-    addContent(profile, moreHel, sizeof(moreHel));
-    record *recordsList = list_directory_content(home);
-    printFileInfo(stdout, recordsList);
-    moveFile("profile", "res", home);
-    file *buf = navigate("res", home);
-    printFileInfo(stdout, list_directory_content(buf));
-    removeFile("profile", buf);
-    printFileInfo(stdout, list_directory_content(buf));
-
-    return 0;
-}*/
